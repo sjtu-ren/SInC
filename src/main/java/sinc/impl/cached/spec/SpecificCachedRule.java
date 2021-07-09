@@ -4,6 +4,7 @@ import sinc.common.*;
 import sinc.impl.cached.CachedQueryMonitor;
 import sinc.impl.cached.CachedRule;
 import sinc.impl.cached.MemKB;
+import sinc.impl.cached.recal.RecalculateCachedRule;
 
 import java.util.*;
 
@@ -661,8 +662,17 @@ public class SpecificCachedRule extends CachedRule {
 
     @Override
     protected double factCoverage() {
-        /* Todo: Implement Here */
-        throw new Error("Not Implemented");
+        final Set<Predicate> entailed_head = new HashSet<>();
+        for (final List<PredicateCache> grounding_cache: groundings) {
+            final PredicateCache head_pred_cache = grounding_cache.get(HEAD_PRED_IDX);
+            for (Predicate head_pred: head_pred_cache.inclusion) {
+                if (!kb.hasProved(head_pred)) {
+                    entailed_head.add(head_pred);
+                }
+            }
+        }
+        return ((double) entailed_head.size()) /
+                kb.getAllFacts(structure.get(HEAD_PRED_IDX).functor).size();
     }
 
     @Override
