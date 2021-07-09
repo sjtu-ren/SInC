@@ -192,6 +192,11 @@ class SInCTest {
         }
 
         @Override
+        public Set<String> getAllConstants() {
+            return kb.getAllConstants();
+        }
+
+        @Override
         protected void recordRuleStatus(Rule rule, Rule.UpdateStatus updateStatus) {}
     }
 

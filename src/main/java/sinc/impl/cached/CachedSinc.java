@@ -88,6 +88,11 @@ public abstract class CachedSinc extends SInC {
     }
 
     @Override
+    public Set<String> getAllConstants() {
+        return kb.getAllConstants();
+    }
+
+    @Override
     protected void recordRuleStatus(Rule rule, Rule.UpdateStatus updateStatus) {
         CachedRule r = (CachedRule) rule;
         cacheMonitor.totalClones++;

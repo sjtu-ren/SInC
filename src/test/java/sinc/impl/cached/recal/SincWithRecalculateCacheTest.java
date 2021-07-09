@@ -9,8 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 class SincWithRecalculateCacheTest {
 
@@ -60,6 +59,7 @@ class SincWithRecalculateCacheTest {
                     null
             );
             sinc.run();
+            assertTrue(sinc.recover());
 
             try {
                 Set<RuleFingerPrint> rule_set_sinc = new HashSet<>();
@@ -159,6 +159,7 @@ class SincWithRecalculateCacheTest {
                     null
             );
             sinc.run();
+            assertTrue(sinc.recover());
 
             try {
                 Set<RuleFingerPrint> rule_set_sinc = new HashSet<>();

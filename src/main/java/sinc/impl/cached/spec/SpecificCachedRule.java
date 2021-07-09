@@ -4,7 +4,6 @@ import sinc.common.*;
 import sinc.impl.cached.CachedQueryMonitor;
 import sinc.impl.cached.CachedRule;
 import sinc.impl.cached.MemKB;
-import sinc.impl.cached.recal.RecalculateCachedRule;
 
 import java.util.*;
 

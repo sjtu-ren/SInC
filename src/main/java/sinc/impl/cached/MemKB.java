@@ -156,4 +156,8 @@ public class MemKB {
         }
         return cnt;
     }
+
+    public Set<String> getAllConstants() {
+        return constants;
+    }
 }

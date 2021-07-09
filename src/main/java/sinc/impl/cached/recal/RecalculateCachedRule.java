@@ -1,6 +1,5 @@
 package sinc.impl.cached.recal;
 
-import sinc.SincRecovery;
 import sinc.common.*;
 import sinc.impl.cached.CachedQueryMonitor;
 import sinc.impl.cached.CachedRule;
