@@ -230,7 +230,7 @@ public class RecalculateCachedRule extends CachedRule {
             final BodyFvPos arg_pos = bodyFreeVars.remove(varId);
             boundFreeVars2NewVarUpdateCache(newPredicate, argIdx, arg_pos.bodyPredIdx, arg_pos.bodyArgIdx, true);
         } else {
-            final Map<String, Set<Predicate>> arg_indices_map = kb.getIndices(newPredicate.functor, argIdx);
+            final Map<String, Set<Predicate>> arg_indices_map = kb.getArgIndices(newPredicate.functor, argIdx);
             boolean found = false;
             final ListIterator<List<PredicateCache>> grounding_itr = grounding_list.listIterator();
             for (int pred_idx = pred_idx_start; pred_idx < structure.size() - 1 && !found; pred_idx++) {  // 不要和刚设置的变量比较
@@ -490,7 +490,7 @@ public class RecalculateCachedRule extends CachedRule {
 
         /* 而且在这种情况下，predIdx1 != predIdx2 */
         final ListIterator<List<PredicateCache>> grounding_itr = grounding_list.listIterator();
-        final Map<String, Set<Predicate>> inclusion_map1 = kb.getIndices(newPredicate.functor, argIdx1);
+        final Map<String, Set<Predicate>> inclusion_map1 = kb.getArgIndices(newPredicate.functor, argIdx1);
         if (bodyOnly && HEAD_PRED_IDX == predIdx2) {
             /* body中没有相同的BV，记录一个Body FV */
             bodyFreeVars.put(boundedVars.size() - 1, new BodyFvPos(structure.size() - 1, argIdx1, argIdx2));
@@ -926,7 +926,7 @@ public class RecalculateCachedRule extends CachedRule {
                     head_templates.add(head_template);
                 }
             } else {
-                /* 按predicate组合Body FV */
+                /* 按predicate组合Body FV */ // Todo: 这里有问题，一个BUGV可能对应一个HGV的多个出现
                 final Map<Integer, List<BodyFvPos>> pred_idx_2_arg_idxs_of_bfv = new HashMap<>();
                 for (final BodyFvPos bfv_pos: bodyFreeVars.values()) {
                     final List<BodyFvPos> arg_idxs = pred_idx_2_arg_idxs_of_bfv.computeIfAbsent(

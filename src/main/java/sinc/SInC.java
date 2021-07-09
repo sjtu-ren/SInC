@@ -323,7 +323,7 @@ public abstract class SInC {
         return result;
     }
 
-    protected boolean validate() {
+    protected boolean recover() {
         /* Todo: Implement Here */
         return true;
     }
@@ -476,7 +476,7 @@ public abstract class SInC {
 
             /* 检查结果 */
             if (config.validation) {
-                if (!validate()) {
+                if (!recover()) {
                     System.err.println("[ERROR] Validation Failed");
                 }
             }
