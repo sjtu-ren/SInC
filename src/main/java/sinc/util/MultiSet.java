@@ -15,6 +15,14 @@ public class MultiSet<T> {
         this.size = another.size;
     }
 
+    public MultiSet(T[] elements) {
+        cntMap = new HashMap<>();
+        size = elements.length;
+        for (T t: elements) {
+            cntMap.compute(t, (k, v) -> (null == v) ? 1 : v + 1);
+        }
+    }
+
     public void add(T element) {
         cntMap.compute(element, (k, v) -> (null == v) ? 1 : v + 1);
         size++;
