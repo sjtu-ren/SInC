@@ -31,7 +31,7 @@ public abstract class SInC {
     /* 终止执行的flag */
     private boolean interrupted = false;
 
-    private static class GraphAnalyseResult {
+    protected static class GraphAnalyseResult {
         public int startSetSize = 0;
         public int startSetSizeWithoutFvs = 0;
         public int sccNumber = 0;
@@ -86,6 +86,7 @@ public abstract class SInC {
             );
             for (Rule r: beams) {
                 logger.printf("Extend: %s\n", r);
+                logger.flush();
                 Rule r_max = r;
 
                 /* 遍历r的邻居 */
@@ -139,7 +140,7 @@ public abstract class SInC {
                 }
             }
 
-            /* 找出下一轮的beams，同时检查optimal */
+            /* 找出下一轮的beams */
             Set<Rule> new_beams = new HashSet<>();
             Rule beam_rule;
             while (new_beams.size() < beam_width && (null != (beam_rule = candidates.poll()))) {
@@ -447,6 +448,9 @@ public abstract class SInC {
             case INSUFFICIENT_COVERAGE:
                 performanceMonitor.fcFilteredRules++;
                 break;
+            case TABU_PRUNED:
+                performanceMonitor.tabuPruned++;
+                break;
             default:
                 throw new Error("Unknown Update Status of Rule: " + updateStatus.name());
         }
@@ -457,6 +461,10 @@ public abstract class SInC {
     }
 
     protected abstract void recordRuleStatus(Rule rule, Rule.UpdateStatus updateStatus);
+
+    protected void targetDone(String functor) {
+        /* 这里什么也不做，给后续处理留空间 */
+    }
 
     private void runHandler() {
         final long time_start = System.currentTimeMillis();
@@ -496,6 +504,7 @@ public abstract class SInC {
                 } else {
                     target_head_functors.remove(last_idx);
                     logger.printf("Target Done: %d/%d\n", total_targets - target_head_functors.size(), total_targets);
+                    targetDone(functor);
                 }
             } while (!target_head_functors.isEmpty());
             performanceMonitor.hypothesisRuleNumber = hypothesis.size();

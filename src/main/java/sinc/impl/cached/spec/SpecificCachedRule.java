@@ -648,18 +648,6 @@ public class SpecificCachedRule extends CachedRule {
     }
 
     @Override
-    public UpdateStatus removeBoundedArg(int predIdx, int argIdx) {
-        /* Forward Cached Rule 不支持向前做cache */
-        return UpdateStatus.INVALID;
-    }
-
-    @Override
-    protected UpdateStatus removeBoundedArgHandler(int predIdx, int argIdx) {
-        /* 这里也是什么都不做 */
-        return UpdateStatus.INVALID;
-    }
-
-    @Override
     protected double factCoverage() {
         final Set<Predicate> entailed_head = new HashSet<>();
         for (final List<PredicateCache> grounding_cache: groundings) {

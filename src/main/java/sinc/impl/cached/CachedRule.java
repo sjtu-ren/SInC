@@ -15,4 +15,16 @@ public abstract class CachedRule extends Rule  {
     public CachedRule(Rule another) {
         super(another);
     }
+
+    @Override
+    public final UpdateStatus removeBoundedArg(int predIdx, int argIdx) {
+        /* Cached Rule 不支持向前做cache */
+        return UpdateStatus.INVALID;
+    }
+
+    @Override
+    protected final UpdateStatus removeBoundedArgHandler(int predIdx, int argIdx) {
+        /* 这里也是什么都不做 */
+        return UpdateStatus.INVALID;
+    }
 }

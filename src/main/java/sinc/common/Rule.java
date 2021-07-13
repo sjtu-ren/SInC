@@ -12,7 +12,7 @@ public abstract class Rule {
     public static double MIN_FACT_COVERAGE = 0.0;
 
     public enum UpdateStatus {
-        NORMAL, DUPLICATED, INVALID, INSUFFICIENT_COVERAGE
+        NORMAL, DUPLICATED, INVALID, INSUFFICIENT_COVERAGE, TABU_PRUNED
     }
 
     protected final List<Predicate> structure;
@@ -171,11 +171,7 @@ public abstract class Rule {
             final int predIdx, final int argIdx, final int varId
     ) {
         /* 改变Rule结构 */
-        final Predicate target_predicate = structure.get(predIdx);
-        target_predicate.args[argIdx] = boundedVars.get(varId);
-        boundedVarCnts.set(varId, boundedVarCnts.get(varId)+1);
-        equivConds++;
-        fingerPrint = new RuleFingerPrint(structure);
+        fingerPrint = boundFreeVar2ExistingVarUpdateStructure(predIdx, argIdx, varId);
 
         /* 检查是否命中Cache */
         if (!searchedFingerprints.add(fingerPrint)) {
@@ -198,6 +194,16 @@ public abstract class Rule {
         return UpdateStatus.NORMAL;
     }
 
+    protected RuleFingerPrint boundFreeVar2ExistingVarUpdateStructure(
+            final int predIdx, final int argIdx, final int varId
+    ) {
+        final Predicate target_predicate = structure.get(predIdx);
+        target_predicate.args[argIdx] = boundedVars.get(varId);
+        boundedVarCnts.set(varId, boundedVarCnts.get(varId)+1);
+        equivConds++;
+        return new RuleFingerPrint(structure);
+    }
+
     protected UpdateStatus boundFreeVar2ExistingVarHandler(
             final int predIdx, final int argIdx, final int varId
     ) {
@@ -216,12 +222,7 @@ public abstract class Rule {
             final String functor, final int arity, final int argIdx, final int varId
     ) {
         /* 改变Rule结构 */
-        final Predicate target_predicate = new Predicate(functor, arity);
-        structure.add(target_predicate);
-        target_predicate.args[argIdx] = boundedVars.get(varId);
-        boundedVarCnts.set(varId, boundedVarCnts.get(varId)+1);
-        equivConds++;
-        fingerPrint = new RuleFingerPrint(structure);
+        fingerPrint = boundFreeVar2ExistingVarUpdateStructure(functor, arity, argIdx, varId);
 
         /* 检查是否命中Cache */
         if (!searchedFingerprints.add(fingerPrint)) {
@@ -234,7 +235,7 @@ public abstract class Rule {
         }
 
         /* 执行handler */
-        final UpdateStatus status = boundFreeVar2ExistingVarHandler(target_predicate, argIdx, varId);
+        final UpdateStatus status = boundFreeVar2ExistingVarHandler(structure.get(structure.size() - 1), argIdx, varId);
         if (UpdateStatus.NORMAL != status) {
             return status;
         }
@@ -242,6 +243,17 @@ public abstract class Rule {
         /* 更新Eval */
         this.eval = calculateEval();
         return UpdateStatus.NORMAL;
+    }
+
+    protected RuleFingerPrint boundFreeVar2ExistingVarUpdateStructure(
+            final String functor, final int arity, final int argIdx, final int varId
+    ) {
+        final Predicate target_predicate = new Predicate(functor, arity);
+        structure.add(target_predicate);
+        target_predicate.args[argIdx] = boundedVars.get(varId);
+        boundedVarCnts.set(varId, boundedVarCnts.get(varId)+1);
+        equivConds++;
+        return new RuleFingerPrint(structure);
     }
 
     protected UpdateStatus boundFreeVar2ExistingVarHandler(
@@ -262,15 +274,7 @@ public abstract class Rule {
             final int predIdx1, final int argIdx1, final int predIdx2, final int argIdx2
     ) {
         /* 改变Rule结构 */
-        final Predicate target_predicate1 = structure.get(predIdx1);
-        final Predicate target_predicate2 = structure.get(predIdx2);
-        final Variable new_var = new Variable(boundedVars.size());
-        target_predicate1.args[argIdx1] = new_var;
-        target_predicate2.args[argIdx2] = new_var;
-        boundedVars.add(new_var);
-        boundedVarCnts.add(2);
-        equivConds++;
-        fingerPrint = new RuleFingerPrint(structure);
+        fingerPrint = boundFreeVars2NewVarUpdateStructure(predIdx1, argIdx1, predIdx2, argIdx2);
 
         /* 检查是否命中Cache */
         if (!searchedFingerprints.add(fingerPrint)) {
@@ -293,6 +297,20 @@ public abstract class Rule {
         return UpdateStatus.NORMAL;
     }
 
+    protected RuleFingerPrint boundFreeVars2NewVarUpdateStructure(
+            final int predIdx1, final int argIdx1, final int predIdx2, final int argIdx2
+    ) {
+        final Predicate target_predicate1 = structure.get(predIdx1);
+        final Predicate target_predicate2 = structure.get(predIdx2);
+        final Variable new_var = new Variable(boundedVars.size());
+        target_predicate1.args[argIdx1] = new_var;
+        target_predicate2.args[argIdx2] = new_var;
+        boundedVars.add(new_var);
+        boundedVarCnts.add(2);
+        equivConds++;
+        return new RuleFingerPrint(structure);
+    }
+
     protected UpdateStatus boundFreeVars2NewVarHandler(
             final int predIdx1, final int argIdx1, final int predIdx2, final int argIdx2
     ) {
@@ -311,16 +329,7 @@ public abstract class Rule {
             final String functor, final int arity, final int argIdx1, final int predIdx2, final int argIdx2
     ) {
         /* 改变Rule结构 */
-        final Predicate target_predicate1 = new Predicate(functor, arity);
-        structure.add(target_predicate1);
-        final Predicate target_predicate2 = structure.get(predIdx2);
-        final Variable new_var = new Variable(boundedVars.size());
-        target_predicate1.args[argIdx1] = new_var;
-        target_predicate2.args[argIdx2] = new_var;
-        boundedVars.add(new_var);
-        boundedVarCnts.add(2);
-        equivConds++;
-        fingerPrint = new RuleFingerPrint(structure);
+        fingerPrint = boundFreeVars2NewVarUpdateStructure(functor, arity, argIdx1, predIdx2, argIdx2);
 
         /* 检查是否命中Cache */
         if (!searchedFingerprints.add(fingerPrint)) {
@@ -333,7 +342,9 @@ public abstract class Rule {
         }
 
         /* 执行handler */
-        final UpdateStatus status = boundFreeVars2NewVarHandler(target_predicate1, argIdx1, predIdx2, argIdx2);
+        final UpdateStatus status = boundFreeVars2NewVarHandler(
+                structure.get(structure.size() - 1), argIdx1, predIdx2, argIdx2
+        );
         if (UpdateStatus.NORMAL != status) {
             return status;
         }
@@ -341,6 +352,21 @@ public abstract class Rule {
         /* 更新Eval */
         this.eval = calculateEval();
         return UpdateStatus.NORMAL;
+    }
+
+    protected RuleFingerPrint boundFreeVars2NewVarUpdateStructure(
+            final String functor, final int arity, final int argIdx1, final int predIdx2, final int argIdx2
+    ) {
+        final Predicate target_predicate1 = new Predicate(functor, arity);
+        structure.add(target_predicate1);
+        final Predicate target_predicate2 = structure.get(predIdx2);
+        final Variable new_var = new Variable(boundedVars.size());
+        target_predicate1.args[argIdx1] = new_var;
+        target_predicate2.args[argIdx2] = new_var;
+        boundedVars.add(new_var);
+        boundedVarCnts.add(2);
+        equivConds++;
+        return new RuleFingerPrint(structure);
     }
 
     protected UpdateStatus boundFreeVars2NewVarHandler(
@@ -359,10 +385,7 @@ public abstract class Rule {
      */
     public UpdateStatus boundFreeVar2Constant(final int predIdx, final int argIdx, final String constantSymbol) {
         /* 改变Rule结构 */
-        final Predicate predicate = structure.get(predIdx);
-        predicate.args[argIdx] = new Constant(CONSTANT_ARG_ID, constantSymbol);
-        equivConds++;
-        fingerPrint = new RuleFingerPrint(structure);
+        fingerPrint = boundFreeVar2ConstantUpdateStructure(predIdx, argIdx, constantSymbol);
 
         /* 检查是否命中Cache */
         if (!searchedFingerprints.add(fingerPrint)) {
@@ -385,6 +408,15 @@ public abstract class Rule {
         return UpdateStatus.NORMAL;
     }
 
+    protected RuleFingerPrint boundFreeVar2ConstantUpdateStructure(
+            final int predIdx, final int argIdx, final String constantSymbol
+    ) {
+        final Predicate predicate = structure.get(predIdx);
+        predicate.args[argIdx] = new Constant(CONSTANT_ARG_ID, constantSymbol);
+        equivConds++;
+        return new RuleFingerPrint(structure);
+    }
+
     protected UpdateStatus boundFreeVar2ConstantHandler(final int predIdx, final int argIdx, final String constantSymbol) {
         if (MIN_FACT_COVERAGE >= factCoverage()) {
             return UpdateStatus.INSUFFICIENT_COVERAGE;
@@ -393,6 +425,30 @@ public abstract class Rule {
     }
 
     public UpdateStatus removeBoundedArg(final int predIdx, final int argIdx) {
+        fingerPrint = removeBoundedArgUpdateStructure(predIdx, argIdx);
+
+        /* 检查是否命中Cache */
+        if (!searchedFingerprints.add(fingerPrint)) {
+            return UpdateStatus.DUPLICATED;
+        }
+
+        /* 检查合法性 */
+        if (isInvalid()) {
+            return UpdateStatus.INVALID;
+        }
+
+        /* 执行handler */
+        final UpdateStatus status = removeBoundedArgHandler(predIdx, argIdx);
+        if (UpdateStatus.NORMAL != status) {
+            return status;
+        }
+
+        /* 更新Eval */
+        this.eval = calculateEval();
+        return UpdateStatus.NORMAL;
+    }
+
+    protected RuleFingerPrint removeBoundedArgUpdateStructure(final int predIdx, final int argIdx) {
         final Predicate predicate = structure.get(predIdx);
         final Argument argument = predicate.args[argIdx];
         predicate.args[argIdx] = null;
@@ -453,28 +509,7 @@ public abstract class Rule {
                 itr.remove();
             }
         }
-
-        fingerPrint = new RuleFingerPrint(structure);
-
-        /* 检查是否命中Cache */
-        if (!searchedFingerprints.add(fingerPrint)) {
-            return UpdateStatus.DUPLICATED;
-        }
-
-        /* 检查合法性 */
-        if (isInvalid()) {
-            return UpdateStatus.INVALID;
-        }
-
-        /* 执行handler */
-        final UpdateStatus status = removeBoundedArgHandler(predIdx, argIdx);
-        if (UpdateStatus.NORMAL != status) {
-            return status;
-        }
-
-        /* 更新Eval */
-        this.eval = calculateEval();
-        return UpdateStatus.NORMAL;
+        return new RuleFingerPrint(structure);
     }
 
     protected UpdateStatus removeBoundedArgHandler(final int predIdx, final int argIdx) {

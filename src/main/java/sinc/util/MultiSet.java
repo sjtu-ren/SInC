@@ -114,6 +114,23 @@ public class MultiSet<T> {
         return cntMap.size();
     }
 
+    public Set<T> distinctValues() {
+        return cntMap.keySet();
+    }
+
+    public boolean subsetOf(MultiSet<T> another) {
+        if (this.cntMap.size() > another.cntMap.size() || this.size > another.size) {
+            return false;
+        }
+        for (Map.Entry<T, Integer> entry: this.cntMap.entrySet()) {
+            final Integer another_cnt = another.cntMap.get(entry.getKey());
+            if (null == another_cnt || another_cnt < entry.getValue()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
