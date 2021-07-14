@@ -45,8 +45,8 @@ public class RecalculateCachedRule extends CachedRule {
     }
 
     private final MemKB kb;
-    private final List<List<PredicateCache>> groundings = new LinkedList<>();
-    private final List<List<PredicateCache>> groundingsBody = new LinkedList<>();
+    private List<List<PredicateCache>> groundings = new LinkedList<>();
+    private List<List<PredicateCache>> groundingsBody = new LinkedList<>();
     private final Map<Integer, BodyFvPos> bodyFreeVars;  // 排除head时，在body中变成FV的BV及其位置
 
     public RecalculateCachedRule(String headFunctor, Set<RuleFingerPrint> cache, MemKB kb) {
@@ -810,14 +810,7 @@ public class RecalculateCachedRule extends CachedRule {
         );
     }
 
-    /**
-     * @return 只返回那些首次被entail的head对应的一个grounding
-     */
-    public UpdateResult updateInKb() {
-        return new UpdateResult(findGroundings(), findCounterExamples());
-    }
-
-    private Set<Predicate> findCounterExamples() {
+    protected Set<Predicate> findCounterExamples() {
         final Set<Predicate> counter_example_set = new HashSet<>();
 
         /* 统计head中的变量信息 */
@@ -1020,7 +1013,7 @@ public class RecalculateCachedRule extends CachedRule {
         return counter_example_set;
     }
 
-    private List<Predicate[]> findGroundings() {
+    protected List<Predicate[]> findGroundings() {
         final long pos_entail_begin = System.nanoTime();
         final List<Predicate[]> grounding_list = new ArrayList<>();
         final Set<Predicate> entailed_head = new HashSet<>();
@@ -1046,6 +1039,12 @@ public class RecalculateCachedRule extends CachedRule {
         final long pos_entail_done = System.nanoTime();
         cacheMonitor.posEntailQueryCostInNano += pos_entail_done - pos_entail_begin;
         return grounding_list;
+    }
+
+    @Override
+    protected void releaseCache() {
+        groundings = null;
+        groundingsBody = null;
     }
 
     private List<PredicateCache> dupGrounding(List<PredicateCache> grounding, boolean bodyOnly) {

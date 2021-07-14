@@ -36,10 +36,4 @@ public class SincWithRecalculateCache extends CachedSinc {
     protected Rule getStartRule(String headFunctor, Set<RuleFingerPrint> cache) {
         return new RecalculateCachedRule(headFunctor, cache, kb);
     }
-
-    @Override
-    protected UpdateResult updateKb(Rule rule) {
-        RecalculateCachedRule forward_cached_rule = (RecalculateCachedRule) rule;
-        return forward_cached_rule.updateInKb();
-    }
 }

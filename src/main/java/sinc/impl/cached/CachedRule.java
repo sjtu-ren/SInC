@@ -1,8 +1,11 @@
 package sinc.impl.cached;
 
+import sinc.common.Predicate;
 import sinc.common.Rule;
 import sinc.common.RuleFingerPrint;
+import sinc.common.UpdateResult;
 
+import java.util.List;
 import java.util.Set;
 
 public abstract class CachedRule extends Rule  {
@@ -15,6 +18,21 @@ public abstract class CachedRule extends Rule  {
     public CachedRule(Rule another) {
         super(another);
     }
+
+    /**
+     * @return 只返回那些首次被entail的head对应的一个grounding
+     */
+    public UpdateResult updateInKb() {
+        final UpdateResult result = new UpdateResult(findGroundings(), findCounterExamples());
+        releaseCache();
+        return result;
+    }
+
+    protected abstract Set<Predicate> findCounterExamples();
+
+    protected abstract List<Predicate[]> findGroundings();
+
+    protected abstract void releaseCache();
 
     @Override
     public final UpdateStatus removeBoundedArg(int predIdx, int argIdx) {

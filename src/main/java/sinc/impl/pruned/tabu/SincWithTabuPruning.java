@@ -1,6 +1,5 @@
 package sinc.impl.pruned.tabu;
 
-import sinc.SInC;
 import sinc.SincConfig;
 import sinc.common.Rule;
 import sinc.common.RuleFingerPrint;

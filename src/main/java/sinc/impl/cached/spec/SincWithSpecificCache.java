@@ -34,10 +34,4 @@ public class SincWithSpecificCache extends CachedSinc {
     protected Rule getStartRule(String headFunctor, Set<RuleFingerPrint> cache) {
         return new SpecificCachedRule(headFunctor, cache, kb);
     }
-
-    @Override
-    protected UpdateResult updateKb(Rule rule) {
-        SpecificCachedRule forward_cached_rule = (SpecificCachedRule) rule;
-        return forward_cached_rule.updateInKb();
-    }
 }

@@ -25,8 +25,8 @@ public class SpecificCachedRule extends CachedRule {
         }
     }
     private final MemKB kb;
-    private final List<List<PredicateCache>> groundings = new LinkedList<>();
-    private final List<List<PredicateCache>> groundingsBody = new LinkedList<>();
+    private List<List<PredicateCache>> groundings = new LinkedList<>();
+    private List<List<PredicateCache>> groundingsBody = new LinkedList<>();
 
     public SpecificCachedRule(String headFunctor, Set<RuleFingerPrint> cache, MemKB kb) {
         super(headFunctor, kb.getArity(headFunctor), cache);
@@ -765,14 +765,7 @@ public class SpecificCachedRule extends CachedRule {
         );
     }
 
-    /**
-     * @return 只返回那些首次被entail的head对应的一个grounding
-     */
-    public UpdateResult updateInKb() {
-        return new UpdateResult(findGroundings(), findCounterExamples());
-    }
-
-    private Set<Predicate> findCounterExamples() {
+    protected Set<Predicate> findCounterExamples() {
         class GVBindingInfo {
             final int bodyPredIdx;
             final int bodyArgIdx;
@@ -890,7 +883,7 @@ public class SpecificCachedRule extends CachedRule {
         return counter_example_set;
     }
 
-    private List<Predicate[]> findGroundings() {
+    protected List<Predicate[]> findGroundings() {
         final long pos_entail_begin = System.nanoTime();
         final List<Predicate[]> grounding_list = new ArrayList<>();
         final Set<Predicate> entailed_head = new HashSet<>();
@@ -916,6 +909,12 @@ public class SpecificCachedRule extends CachedRule {
         final long pos_entail_done = System.nanoTime();
         cacheMonitor.posEntailQueryCostInNano += pos_entail_done - pos_entail_begin;
         return grounding_list;
+    }
+
+    @Override
+    protected void releaseCache() {
+        groundings = null;
+        groundingsBody = null;
     }
 
     private List<PredicateCache> dupGrounding(List<PredicateCache> grounding, boolean bodyOnly) {

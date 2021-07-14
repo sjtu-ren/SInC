@@ -115,6 +115,12 @@ public abstract class CachedSinc extends SInC {
     }
 
     @Override
+    protected UpdateResult updateKb(Rule rule) {
+        CachedRule forward_cached_rule = (CachedRule) rule;
+        return forward_cached_rule.updateInKb();
+    }
+
+    @Override
     protected void showMonitor() {
         super.showMonitor();
         cacheMonitor.show(logger);
