@@ -523,6 +523,19 @@ public abstract class SInC {
             final long time_start_set_found = System.currentTimeMillis();
             performanceMonitor.otherMiningTime += time_start_set_found - time_graph_analyse_begin;
 
+            /* 打印所有rules */
+            logger.println("\n### Hypothesis Found ###");
+            for (Rule rule : hypothesis) {
+                logger.println(rule);
+            }
+            logger.println();
+
+            /* 记录结果 */
+            dumpResult();
+            final long time_dumped = System.currentTimeMillis();
+            performanceMonitor.dumpTime = time_dumped - time_start_set_found;
+            performanceMonitor.totalTime = time_dumped - time_start;
+
             /* 检查结果 */
             if (config.validation) {
                 if (!recover()) {
@@ -531,19 +544,6 @@ public abstract class SInC {
             }
             final long time_validation_done = System.currentTimeMillis();
             performanceMonitor.validationTime = time_validation_done - time_start_set_found;
-
-            /* 记录结果 */
-            dumpResult();
-            final long time_dumped = System.currentTimeMillis();
-            performanceMonitor.dumpTime = time_dumped - time_validation_done;
-            performanceMonitor.totalTime = time_dumped - time_start;
-
-            /* 打印所有rules */
-            logger.println("\n### Hypothesis Found ###");
-            for (Rule rule : hypothesis) {
-                logger.println(rule);
-            }
-            logger.println();
 
             showMonitor();
 
@@ -568,18 +568,18 @@ public abstract class SInC {
             final long time_start_set_found = System.currentTimeMillis();
             performanceMonitor.otherMiningTime += time_start_set_found - time_graph_analyse_begin;
 
-            /* 记录结果 */
-            dumpResult();
-            final long time_dumped = System.currentTimeMillis();
-            performanceMonitor.dumpTime = time_dumped - time_start_set_found;
-            performanceMonitor.totalTime = time_dumped - time_start;
-
             /* 打印所有rules */
             logger.println("\n### Hypothesis Found ###");
             for (Rule rule : hypothesis) {
                 logger.println(rule);
             }
             logger.println();
+
+            /* 记录结果 */
+            dumpResult();
+            final long time_dumped = System.currentTimeMillis();
+            performanceMonitor.dumpTime = time_dumped - time_start_set_found;
+            performanceMonitor.totalTime = time_dumped - time_start;
 
             showMonitor();
 
@@ -594,6 +594,13 @@ public abstract class SInC {
                 logger.println(rule);
             }
             logger.println();
+
+            /* 记录结果 */
+            final long time_dump_start = System.currentTimeMillis();
+            dumpResult();
+            final long time_dumped = System.currentTimeMillis();
+            performanceMonitor.dumpTime = time_dumped - time_dump_start;
+            performanceMonitor.totalTime = time_dumped - time_start;
 
             showMonitor();
 

@@ -1,7 +1,5 @@
 package sinc.exp;
 
-import sinc.common.Eval;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,6 +14,9 @@ public enum Dataset {
     WEBKB_WASHINGTON("../datasets/webkb.washington.tsv", "WebKB.Washington", "WKw"),
     WEBKB_WISCONSIN("../datasets/webkb.wisconsin.tsv", "WebKB.Wisconsin", "WKi"),
     NELL("../datasets/nell.tsv", "NELL", "N"),
+    UMLS("../datasets/UMLS.tsv", "UMLS", "U"),
+    WN18("../datasets/WN18.tsv", "WN18", "WN"),
+    FB15K("../datasets/FB15K.tsv", "FB15K", "FB"),
     FAMILY_SIMPLE("../datasets/family_simple.tsv", "Family.simple", "Fs"),
     FAMILY_MEDIUM("../datasets/family_medium.tsv", "Family.medium", "Fm")
     ;

@@ -32,7 +32,7 @@ public class TestCachedModel {
 
         final SincConfig config = new SincConfig(
                 1,
-                false,
+                true,
                 false,
                 beam_width,
                 true,
