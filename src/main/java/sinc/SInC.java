@@ -398,6 +398,11 @@ public abstract class SInC {
             }
             writer.println();
 
+            /* Dump Supplementary Constant Symbols */
+            for (String constant: supplementaryConstants) {
+                writer.println(constant);
+            }
+
             writer.close();
         } catch (FileNotFoundException e) {
             System.err.println("[ERROR] Dump Failed.");

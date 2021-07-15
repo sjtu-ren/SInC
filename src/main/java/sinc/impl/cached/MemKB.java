@@ -15,9 +15,37 @@ public class MemKB {
     private final Map<String, MultiSet<String>[]> functor2ArgSetsMap = new HashMap<>();
     private final Map<String, List<String>[]> functor2PromisingConstMap = new HashMap<>();
 
-    public void addFact(Predicate predicate) {
+    public void declareFunctor(String functor, int arity) {
+        functor2Facts.computeIfAbsent(functor, k -> new HashSet<>());
+        functor2ArityMap.putIfAbsent(functor, arity);
+        functor2ArgIdx.computeIfAbsent(functor, k -> {
+            Map<String, Set<Predicate>>[] _arg_indices = new Map[arity];
+            for (int i = 0; i < arity; i++) {
+                _arg_indices[i] = new HashMap<>();
+            }
+            return _arg_indices;
+        });
+        functor2ArgSetsMap.computeIfAbsent(functor, k -> {
+            MultiSet<String>[] _arg_set_list = new MultiSet[arity];
+            for (int i = 0; i < _arg_set_list.length; i++) {
+                _arg_set_list[i] = new MultiSet<>();
+            }
+            return _arg_set_list;
+        });
+        functor2PromisingConstMap.computeIfAbsent(functor, k -> {
+            List<String>[] _const_lists = new List[arity];
+            for (int i = 0; i < _const_lists.length; i++) {
+                _const_lists[i] = new ArrayList<>();
+            }
+            return _const_lists;
+        });
+    }
+
+    public boolean addFact(Predicate predicate) {
         /* 添加到functor索引 */
-        originalKB.add(predicate);
+        if (!originalKB.add(predicate)) {
+            return false;
+        }
         functor2Facts.compute(predicate.functor, (func, set) -> {
             if (null == set) {
                 set = new HashSet<>();
@@ -58,6 +86,7 @@ public class MemKB {
             arg_sets[i].add(constant_symbol);
             constants.add(constant_symbol);
         }
+        return true;
     }
 
     public void calculatePromisingConstants(double threshold) {

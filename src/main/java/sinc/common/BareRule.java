@@ -1,9 +1,6 @@
-package sinc.impl.pruned.tabu;
+package sinc.common;
 
-import sinc.common.Eval;
-import sinc.common.Rule;
-import sinc.common.RuleFingerPrint;
-
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -12,6 +9,10 @@ import java.util.Set;
 public class BareRule extends Rule {
     public BareRule(String headFunctor, int arity, Set<RuleFingerPrint> searchedFingerprints) {
         super(headFunctor, arity, searchedFingerprints);
+    }
+
+    public BareRule(List<Predicate> structure, Set<RuleFingerPrint> searchedFingerprints) {
+        super(structure, searchedFingerprints);
     }
 
     public BareRule(Rule another) {

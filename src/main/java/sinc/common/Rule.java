@@ -39,6 +39,43 @@ public abstract class Rule {
         this.searchedFingerprints.add(fingerPrint);
     }
 
+    public Rule(List<Predicate> structure, Set<RuleFingerPrint> searchedFingerprints) {
+        this.structure = new ArrayList<>(structure);
+        boundedVars = new ArrayList<>();
+        boundedVarCnts = new ArrayList<>();
+
+        int max_var_id = -1;
+        for (Predicate p: this.structure) {
+            for (Argument argument: p.args) {
+                if (null != argument) {
+                    if (argument.isVar) {
+                        max_var_id = Math.max(max_var_id, argument.id);
+                    }
+                    this.equivConds++;
+                }
+            }
+        }
+        this.equivConds -= max_var_id + 1;
+
+        for (int var_id = 0; var_id <= max_var_id; var_id++) {
+            this.boundedVars.add(new Variable(var_id));
+            this.boundedVarCnts.add(0);
+        }
+        for (Predicate p: this.structure) {
+            for (int arg_idx = 0; arg_idx < p.arity(); arg_idx++) {
+                final Argument argument = p.args[arg_idx];
+                if (null != argument && argument.isVar) {
+                    p.args[arg_idx] = this.boundedVars.get(argument.id);
+                    this.boundedVarCnts.set(argument.id, this.boundedVarCnts.get(argument.id) + 1);
+                }
+            }
+        }
+
+        this.fingerPrint = new RuleFingerPrint(this.structure);
+        this.searchedFingerprints = searchedFingerprints;
+        this.searchedFingerprints.add(fingerPrint);
+    }
+
     public Rule(Rule another) {
         this.structure = new ArrayList<>(another.structure.size());
         for (Predicate predicate: another.structure) {

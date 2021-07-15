@@ -49,6 +49,9 @@ public class SincRecovery {
         for (Rule r: hypothesis) {
             for (int pred_idx = 0; pred_idx < r.length(); pred_idx++) {
                 final Predicate pred = r.getPredicate(pred_idx);
+                /* 保险起见，把所有的functor声明一遍 */
+                kb.declareFunctor(pred.functor, pred.arity());
+
                 for (Argument argument: pred.args) {
                     if (null != argument && !argument.isVar) {
                         constants.add(argument.name);
@@ -66,14 +69,18 @@ public class SincRecovery {
 
     public Set<Predicate> recover() {
         recoveredFacts.addAll(reducedFacts);
-        for (Rule r: hypothesis) {
-            inferByRule(r);
+        int added_facts = 1;
+        while (0 < added_facts) {
+            added_facts = 0;
+            for (Rule r : hypothesis) {
+                added_facts += inferByRule(r);
+            }
         }
-        recoveredFacts.removeIf(counterExamples::contains);
+//        recoveredFacts.removeIf(counterExamples::contains);
         return recoveredFacts;
     }
 
-    protected void inferByRule(Rule r) {
+    protected int inferByRule(Rule r) {
         /* 统计head中的变量信息 */
         final Map<Integer, List<Integer>> head_var_2_loc_map = new HashMap<>();  // Head Only LV Locations
         int uv_id = r.usedBoundedVars();
@@ -394,15 +401,29 @@ public class SincRecovery {
                 }
             }
         }
+
+        int original_size = recoveredFacts.size();
         if (head_ov_pos_list.isEmpty()) {
             /* 不需要替换变量 */
-            recoveredFacts.addAll(head_templates);
+//            recoveredFacts.addAll(head_templates);
+            for (Predicate fact: head_templates) {
+                if (!counterExamples.contains(fact) && kb.addFact(fact)) {
+                    recoveredFacts.add(fact);
+                }
+            }
         } else {
             /* 需要替换head中的变量 */
+            final Set<Predicate> inferred_facts = new HashSet<>();
             for (Predicate head_template: head_templates) {
-                iterate4Facts(recoveredFacts, head_template, 0, head_ov_poss);
+                iterate4Facts(inferred_facts, head_template, 0, head_ov_poss);
+            }
+            for (Predicate fact: inferred_facts) {
+                if (!counterExamples.contains(fact) && kb.addFact(fact)) {
+                    recoveredFacts.add(fact);
+                }
             }
         }
+        return recoveredFacts.size() - original_size;
     }
 
     protected Map<String, Set<Predicate>>[] buildArgIndices(Set<Predicate> predicates) {
