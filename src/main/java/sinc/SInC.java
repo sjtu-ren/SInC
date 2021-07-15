@@ -368,14 +368,14 @@ public abstract class SInC {
         try {
             PrintWriter writer = new PrintWriter(dumpPath);
             /* Dump Hypothesis */
-            writer.println("# Hypothesis");
+//            writer.println("# Hypothesis");
             for (Rule r: hypothesis) {
-                writer.println(r);
+                writer.println(r.toDumpString());
             }
             writer.println();
 
             /* Dump Start Set */
-            writer.println("# Essential Knowledge");
+//            writer.println("# Essential Knowledge");
             for (Predicate p: startSet) {
                 writer.print(p.functor);
                 for (Argument arg: p.args) {
@@ -387,7 +387,7 @@ public abstract class SInC {
             writer.println();
 
             /* Dump Counter Example Set */
-            writer.println("# Counter Examples");
+//            writer.println("# Counter Examples");
             for (Predicate p: counterExamples) {
                 writer.print(p.functor);
                 for (Argument arg: p.args) {

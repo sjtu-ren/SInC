@@ -574,6 +574,19 @@ public abstract class Rule {
         return builder.toString();
     }
 
+    public String toDumpString() {
+        StringBuilder builder = new StringBuilder(structure.get(0).toString());
+        builder.append(":-");
+        if (1 < structure.size()) {
+            builder.append(structure.get(1));
+            for (int i = 2; i < structure.size(); i++) {
+                builder.append(',');
+                builder.append(structure.get(i).toString());
+            }
+        }
+        return builder.toString();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
