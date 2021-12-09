@@ -358,7 +358,14 @@ public abstract class SInC {
     public boolean recover() {
         SincRecovery recovery = new SincRecovery(hypothesis, startSet, counterExamples, supplementaryConstants);
         final Set<Predicate> recovered_kb = recovery.recover();
-        return getOriginalKb().equals(recovered_kb);
+        boolean success = getOriginalKb().equals(recovered_kb);
+        if (!success) {
+            System.err.printf(
+                    "[ERROR] Validation failed: %d expected but only %d recovered.",
+                    getOriginalKb().size(), recovered_kb.size()
+            );
+        }
+        return success;
     }
 
     protected void dumpResult() {
