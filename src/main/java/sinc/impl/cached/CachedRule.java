@@ -23,9 +23,7 @@ public abstract class CachedRule extends Rule  {
      * @return 只返回那些首次被entail的head对应的一个grounding
      */
     public UpdateResult updateInKb() {
-        final UpdateResult result = new UpdateResult(findGroundings(), findCounterExamples());
-        releaseCache();
-        return result;
+        return new UpdateResult(findGroundings(), findCounterExamples());
     }
 
     protected abstract Set<Predicate> findCounterExamples();

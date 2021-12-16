@@ -200,6 +200,26 @@ class SInCTest {
         protected void recordRuleStatus(Rule rule, Rule.UpdateStatus updateStatus) {}
     }
 
+    public static void main(String[] args) {
+        SincImpl sinc = new SincImpl(new SincConfig(
+                1,
+                false,
+                false,
+                2,
+                true,
+                Eval.EvalMetric.CompressionRate,
+                -1,
+                0,
+                false,
+                -1,
+                false,
+                false),
+                null,null,null
+        );
+        sinc.run();
+        System.out.println("Finished");
+    }
+
     @Test
     void testFamily1() {
         SincImpl sinc = new SincImpl(new SincConfig(

@@ -10,7 +10,7 @@ import sinc.util.ComparableArray;
 import java.util.*;
 
 public class SincRecovery {
-    protected final Set<Predicate> reducedFacts;
+    protected final Set<Predicate> necessaryFacts;
     protected final Set<Predicate> counterExamples;
     protected final List<Rule> hypothesis;
     protected final Set<String> constants;
@@ -33,14 +33,14 @@ public class SincRecovery {
     }
 
     public SincRecovery(
-            List<Rule> hypothesis, Set<Predicate> reducedFacts, Set<Predicate> counterExamples,
+            List<Rule> hypothesis, Set<Predicate> necessaryFacts, Set<Predicate> counterExamples,
             Set<String> deltaConstantSet
     ) {
         this.hypothesis = hypothesis;
-        this.reducedFacts = reducedFacts;
+        this.necessaryFacts = necessaryFacts;
         this.counterExamples = counterExamples;
         this.kb = new MemKB();
-        for (Predicate f: reducedFacts) {
+        for (Predicate f: necessaryFacts) {
             kb.addFact(f);
         }
 
@@ -68,7 +68,7 @@ public class SincRecovery {
     }
 
     public Set<Predicate> recover() {
-        recoveredFacts.addAll(reducedFacts);
+        recoveredFacts.addAll(necessaryFacts);
         int added_facts = 1;
         while (0 < added_facts) {
             added_facts = 0;

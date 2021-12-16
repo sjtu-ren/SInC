@@ -45,7 +45,7 @@ public abstract class SInC {
         this.dumpPath = dumpPath;
         PrintWriter writer;
         try {
-            writer = (null == logPath) ? new PrintWriter(System.out) : new PrintWriter(logPath);
+            writer = (null == logPath) ? new PrintWriter(System.out, true) : new PrintWriter(logPath);
         } catch (IOException e) {
             writer = new PrintWriter(System.out);
         }
@@ -374,6 +374,7 @@ public abstract class SInC {
         }
         try {
             PrintWriter writer = new PrintWriter(dumpPath);
+//            PrintWriter writer = (null == dumpPath) ? new PrintWriter(System.out) : new PrintWriter(dumpPath);
             /* Dump Hypothesis */
 //            writer.println("# Hypothesis");
             for (Rule r: hypothesis) {
@@ -421,6 +422,7 @@ public abstract class SInC {
 
     protected void showMonitor() {
         performanceMonitor.show(logger);
+        logger.flush();
     }
 
     public List<Rule> getHypothesis() {
@@ -628,6 +630,8 @@ public abstract class SInC {
             while (task.isAlive() && (System.in.available() <= 0)) {
                 Thread.sleep(1000);
             }
+            logger.println("Exit normally");
+            logger.flush();
         } catch (Exception e) {
             e.printStackTrace();
         } finally {

@@ -3,6 +3,7 @@ package sinc.impl.cached.recal;
 import org.junit.jupiter.api.Test;
 import sinc.SincConfig;
 import sinc.common.*;
+import sinc.exp.Dataset;
 import sinc.util.datagen.FamilyRelationGenerator;
 
 import java.io.File;
@@ -243,6 +244,62 @@ class SincWithRecalculateCacheTest {
         }
 
         deleteFile(tmp_bk_file_path);
+    }
+
+    @Test
+    void test1() {
+        final SincConfig config = new SincConfig(
+                1,
+                false,
+                false,
+                5,
+                true,
+                Eval.EvalMetric.CompressionCapacity,
+                0.05,
+                0.25,
+                false,
+                -1.0,
+                false,
+                false
+        );
+
+        SincWithRecalculateCache sinc = new SincWithRecalculateCache(
+                config,
+                "datasets/debug1.tsv",
+                null,
+                null
+        );
+        sinc.run();
+        assertTrue(sinc.recover());
+        System.out.println("Done");
+    }
+
+    @Test
+    void test2() {
+        final SincConfig config = new SincConfig(
+                1,
+                false,
+                false,
+                5,
+                true,
+                Eval.EvalMetric.CompressionCapacity,
+                0.05,
+                0.25,
+                false,
+                -1.0,
+                false,
+                false
+        );
+
+        SincWithRecalculateCache sinc = new SincWithRecalculateCache(
+                config,
+                Dataset.DBPEDIA_FACTBOOK.getPath(),
+                null,
+                null
+        );
+        sinc.run();
+        assertTrue(sinc.recover());
+        System.out.println("Done");
     }
 
     private void checkFile(String filePath) {
