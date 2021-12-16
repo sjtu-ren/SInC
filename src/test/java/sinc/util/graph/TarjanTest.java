@@ -88,9 +88,9 @@ class TarjanTest {
     @Test
     public void testAppointedMap() {
         MapWithAppointedKeySet map = new MapWithAppointedKeySet();
-        BaseGraphNode<String> n1 = new BaseGraphNode<String>("n1");
-        BaseGraphNode<String> n2 = new BaseGraphNode<String>("n2");
-        BaseGraphNode<String> n3 = new BaseGraphNode<String>("n3");
+        BaseGraphNode<String> n1 = new BaseGraphNode<>("n1");
+        BaseGraphNode<String> n2 = new BaseGraphNode<>("n2");
+        BaseGraphNode<String> n3 = new BaseGraphNode<>("n3");
         map.put(n1, new HashSet<>(Collections.singletonList(n2)));
         map.put(n2, new HashSet<>(Collections.singletonList(n3)));
         map.addAppointedKey(n2);
@@ -98,7 +98,7 @@ class TarjanTest {
         assertEquals(1, map.entrySet().size());
         for (Map.Entry<BaseGraphNode<String>, Set<BaseGraphNode<String>>> entry: map.entrySet()) {
             assertEquals(n2, entry.getKey());
-            assertEquals(new HashSet<BaseGraphNode<String>>(Collections.singletonList(n3)), entry.getValue());
+            assertEquals(new HashSet<>(Collections.singletonList(n3)), entry.getValue());
         }
 
         assertEquals(1, map.keySet().size());
@@ -110,21 +110,21 @@ class TarjanTest {
     @Test
     public void testRun() {
         Map<BaseGraphNode<String>, Set<BaseGraphNode<String>>> graph = new HashMap<>();
-        BaseGraphNode<String>n1 = new BaseGraphNode<String>("n1");
-        BaseGraphNode<String>n2 = new BaseGraphNode<String>("n2");
-        BaseGraphNode<String>n3 = new BaseGraphNode<String>("n3");
-        BaseGraphNode<String>n4 = new BaseGraphNode<String>("n4");
-        BaseGraphNode<String>n5 = new BaseGraphNode<String>("n5");
-        BaseGraphNode<String>n6 = new BaseGraphNode<String>("n6");
-        BaseGraphNode<String>n7 = new BaseGraphNode<String>("n7");
-        BaseGraphNode<String>n8 = new BaseGraphNode<String>("n8");
-        graph.put(n1, new HashSet<>(Arrays.asList(n2, n4)));
-        graph.put(n2, new HashSet<>(Arrays.asList(n3, n5)));
-        graph.put(n3, new HashSet<>(Arrays.asList(n1)));
-        graph.put(n4, new HashSet<>(Arrays.asList(n3)));
-        graph.put(n5, new HashSet<>(Arrays.asList(n6, n7)));
-        graph.put(n6, new HashSet<>(Arrays.asList(n5)));
-        graph.put(n7, new HashSet<>(Arrays.asList(n5)));
+        BaseGraphNode<String>n1 = new BaseGraphNode<>("n1");
+        BaseGraphNode<String>n2 = new BaseGraphNode<>("n2");
+        BaseGraphNode<String>n3 = new BaseGraphNode<>("n3");
+        BaseGraphNode<String>n4 = new BaseGraphNode<>("n4");
+        BaseGraphNode<String>n5 = new BaseGraphNode<>("n5");
+        BaseGraphNode<String>n6 = new BaseGraphNode<>("n6");
+        BaseGraphNode<String>n7 = new BaseGraphNode<>("n7");
+        BaseGraphNode<String>n8 = new BaseGraphNode<>("n8");
+        graph.put(n1, new HashSet<>(List.of(n2, n4)));
+        graph.put(n2, new HashSet<>(List.of(n3, n5)));
+        graph.put(n3, new HashSet<>(List.of(n1)));
+        graph.put(n4, new HashSet<>(List.of(n3)));
+        graph.put(n5, new HashSet<>(List.of(n6, n7)));
+        graph.put(n6, new HashSet<>(List.of(n5)));
+        graph.put(n7, new HashSet<>(List.of(n5)));
 
         Tarjan<BaseGraphNode<String>> tarjan = new Tarjan<>(graph);
         List<Set<BaseGraphNode<String>>> sccs = tarjan.run();
@@ -158,40 +158,40 @@ class TarjanTest {
 
     @Test
     public void testRun2() {
-        BaseGraphNode<String>n1 = new BaseGraphNode<String>("n1");
-        BaseGraphNode<String>n2 = new BaseGraphNode<String>("n2");
-        BaseGraphNode<String>n3 = new BaseGraphNode<String>("n3");
-        BaseGraphNode<String>n4 = new BaseGraphNode<String>("n4");
-        BaseGraphNode<String>n5 = new BaseGraphNode<String>("n5");
-        BaseGraphNode<String>n6 = new BaseGraphNode<String>("n6");
-        BaseGraphNode<String>n7 = new BaseGraphNode<String>("n7");
-        BaseGraphNode<String>n8 = new BaseGraphNode<String>("n8");
-        BaseGraphNode<String>n9 = new BaseGraphNode<String>("n9");
-        BaseGraphNode<String>n10 = new BaseGraphNode<String>("n10");
-        BaseGraphNode<String>n11 = new BaseGraphNode<String>("n11");
-        BaseGraphNode<String>n12 = new BaseGraphNode<String>("n12");
-        BaseGraphNode<String>n13 = new BaseGraphNode<String>("n13");
-        BaseGraphNode<String>n14 = new BaseGraphNode<String>("n14");
-        BaseGraphNode<String>n15 = new BaseGraphNode<String>("n15");
-        BaseGraphNode<String>n16 = new BaseGraphNode<String>("n16");
-        BaseGraphNode<String>n17 = new BaseGraphNode<String>("n17");
-        BaseGraphNode<String>n18 = new BaseGraphNode<String>("n18");
-        BaseGraphNode<String>n19 = new BaseGraphNode<String>("n19");
-        BaseGraphNode<String>n20 = new BaseGraphNode<String>("n20");
-        BaseGraphNode<String>n21 = new BaseGraphNode<String>("n21");
-        BaseGraphNode<String>n22 = new BaseGraphNode<String>("n22");
-        BaseGraphNode<String>n23 = new BaseGraphNode<String>("n23");
-        BaseGraphNode<String>n24 = new BaseGraphNode<String>("n24");
+        BaseGraphNode<String>n1 = new BaseGraphNode<>("n1");
+        BaseGraphNode<String>n2 = new BaseGraphNode<>("n2");
+        BaseGraphNode<String>n3 = new BaseGraphNode<>("n3");
+        BaseGraphNode<String>n4 = new BaseGraphNode<>("n4");
+        BaseGraphNode<String>n5 = new BaseGraphNode<>("n5");
+        BaseGraphNode<String>n6 = new BaseGraphNode<>("n6");
+        BaseGraphNode<String>n7 = new BaseGraphNode<>("n7");
+        BaseGraphNode<String>n8 = new BaseGraphNode<>("n8");
+        BaseGraphNode<String>n9 = new BaseGraphNode<>("n9");
+        BaseGraphNode<String>n10 = new BaseGraphNode<>("n10");
+        BaseGraphNode<String>n11 = new BaseGraphNode<>("n11");
+        BaseGraphNode<String>n12 = new BaseGraphNode<>("n12");
+        BaseGraphNode<String>n13 = new BaseGraphNode<>("n13");
+        BaseGraphNode<String>n14 = new BaseGraphNode<>("n14");
+        BaseGraphNode<String>n15 = new BaseGraphNode<>("n15");
+        BaseGraphNode<String>n16 = new BaseGraphNode<>("n16");
+        BaseGraphNode<String>n17 = new BaseGraphNode<>("n17");
+        BaseGraphNode<String>n18 = new BaseGraphNode<>("n18");
+        BaseGraphNode<String>n19 = new BaseGraphNode<>("n19");
+        BaseGraphNode<String>n20 = new BaseGraphNode<>("n20");
+        BaseGraphNode<String>n21 = new BaseGraphNode<>("n21");
+        BaseGraphNode<String>n22 = new BaseGraphNode<>("n22");
+        BaseGraphNode<String>n23 = new BaseGraphNode<>("n23");
+        BaseGraphNode<String>n24 = new BaseGraphNode<>("n24");
 
         Map<BaseGraphNode<String>, Set<BaseGraphNode<String>>> graph = new HashMap<>();
-        graph.put(n1, new HashSet<>(Arrays.asList(n9, n15)));
-        graph.put(n2, new HashSet<>(Arrays.asList(n9, n16)));
-        graph.put(n3, new HashSet<>(Arrays.asList(n10, n17)));
-        graph.put(n4, new HashSet<>(Arrays.asList(n11, n18)));
-        graph.put(n5, new HashSet<>(Arrays.asList(n12, n19)));
-        graph.put(n6, new HashSet<>(Arrays.asList(n12, n20)));
-        graph.put(n7, new HashSet<>(Arrays.asList(n13, n21)));
-        graph.put(n8, new HashSet<>(Arrays.asList(n14, n22)));
+        graph.put(n1, new HashSet<>(List.of(n9, n15)));
+        graph.put(n2, new HashSet<>(List.of(n9, n16)));
+        graph.put(n3, new HashSet<>(List.of(n10, n17)));
+        graph.put(n4, new HashSet<>(List.of(n11, n18)));
+        graph.put(n5, new HashSet<>(List.of(n12, n19)));
+        graph.put(n6, new HashSet<>(List.of(n12, n20)));
+        graph.put(n7, new HashSet<>(List.of(n13, n21)));
+        graph.put(n8, new HashSet<>(List.of(n14, n22)));
 
         Tarjan<BaseGraphNode<String>> tarjan = new Tarjan<>(graph);
         List<Set<BaseGraphNode<String>>> sccs = tarjan.run();
@@ -200,12 +200,12 @@ class TarjanTest {
 
     @Test
     public void testRun3() {
-        BaseGraphNode<String>n1 = new BaseGraphNode<String>("n1");
-        BaseGraphNode<String>n2 = new BaseGraphNode<String>("n2");
-        BaseGraphNode<String>n3 = new BaseGraphNode<String>("n3");
+        BaseGraphNode<String>n1 = new BaseGraphNode<>("n1");
+        BaseGraphNode<String>n2 = new BaseGraphNode<>("n2");
+        BaseGraphNode<String>n3 = new BaseGraphNode<>("n3");
 
         Map<BaseGraphNode<String>, Set<BaseGraphNode<String>>> graph = new HashMap<>();
-        graph.put(n1, new HashSet<>(Arrays.asList(n2, n3)));
+        graph.put(n1, new HashSet<>(List.of(n2, n3)));
 
         Tarjan<BaseGraphNode<String>> tarjan = new Tarjan<>(graph);
         List<Set<BaseGraphNode<String>>> sccs = tarjan.run();
@@ -213,11 +213,61 @@ class TarjanTest {
     }
 
     @Test
+    public void testRun4() {
+        Map<BaseGraphNode<String>, Set<BaseGraphNode<String>>> graph = new HashMap<>();
+        BaseGraphNode<String>n1 = new BaseGraphNode<>("n1");
+        BaseGraphNode<String>n2 = new BaseGraphNode<>("n2");
+        graph.put(n1, new HashSet<>(List.of(n1)));
+        graph.put(n2, new HashSet<>(List.of(n2)));
+
+        Tarjan<BaseGraphNode<String>> tarjan = new Tarjan<>(graph);
+        List<Set<BaseGraphNode<String>>> sccs = tarjan.run();
+        for (Set<BaseGraphNode<String>> scc: sccs) {
+            System.out.print("SCC: ");
+            for (BaseGraphNode<String>n: scc) {
+                System.out.print(n + ", ");
+            }
+            System.out.println();
+        }
+        assertEquals(2, sccs.size());
+        assertEquals(new HashSet<>(List.of(
+                new HashSet<>(List.of(n1)),
+                new HashSet<>(List.of(n2))
+        )), new HashSet<>(sccs));
+    }
+
+    @Test
+    public void testRun5() {
+        Map<BaseGraphNode<String>, Set<BaseGraphNode<String>>> graph = new HashMap<>();
+        BaseGraphNode<String>n1 = new BaseGraphNode<>("n1");
+        BaseGraphNode<String>n2 = new BaseGraphNode<>("n2");
+        BaseGraphNode<String>n3 = new BaseGraphNode<>("n3");
+        graph.put(n1, new HashSet<>(List.of(n1)));
+        graph.put(n2, new HashSet<>(List.of(n2, n3)));
+        graph.put(n3, new HashSet<>(List.of(n2)));
+
+        Tarjan<BaseGraphNode<String>> tarjan = new Tarjan<>(graph);
+        List<Set<BaseGraphNode<String>>> sccs = tarjan.run();
+        for (Set<BaseGraphNode<String>> scc: sccs) {
+            System.out.print("SCC: ");
+            for (BaseGraphNode<String>n: scc) {
+                System.out.print(n + ", ");
+            }
+            System.out.println();
+        }
+        assertEquals(2, sccs.size());
+        assertEquals(new HashSet<>(List.of(
+                new HashSet<>(List.of(n1)),
+                new HashSet<>(List.of(n2, n3))
+        )), new HashSet<>(sccs));
+    }
+
+    @Test
     public void testAppointedStartPoints1() {
         MapWithAppointedKeySet graph = new MapWithAppointedKeySet();
-        BaseGraphNode<String> n1 = new BaseGraphNode<String>("n1");
-        BaseGraphNode<String> n2 = new BaseGraphNode<String>("n2");
-        BaseGraphNode<String> n3 = new BaseGraphNode<String>("n3");
+        BaseGraphNode<String> n1 = new BaseGraphNode<>("n1");
+        BaseGraphNode<String> n2 = new BaseGraphNode<>("n2");
+        BaseGraphNode<String> n3 = new BaseGraphNode<>("n3");
         graph.put(n1, new HashSet<>(Collections.singletonList(n2)));
         graph.put(n2, new HashSet<>(Collections.singletonList(n3)));
         graph.put(n3, new HashSet<>(Collections.singletonList(n2)));
@@ -226,15 +276,15 @@ class TarjanTest {
         Tarjan<BaseGraphNode<String>> tarjan = new Tarjan<>(graph);
         List<Set<BaseGraphNode<String>>> sccs = tarjan.run();
         assertEquals(1, sccs.size());
-        assertTrue(sccs.contains(new HashSet<>(Arrays.asList(n2, n3))));
+        assertTrue(sccs.contains(new HashSet<>(List.of(n2, n3))));
     }
 
     @Test
     public void testAppointedStartPoints2() {
         MapWithAppointedKeySet graph = new MapWithAppointedKeySet();
-        BaseGraphNode<String> n1 = new BaseGraphNode<String>("n1");
-        BaseGraphNode<String> n2 = new BaseGraphNode<String>("n2");
-        BaseGraphNode<String> n3 = new BaseGraphNode<String>("n3");
+        BaseGraphNode<String> n1 = new BaseGraphNode<>("n1");
+        BaseGraphNode<String> n2 = new BaseGraphNode<>("n2");
+        BaseGraphNode<String> n3 = new BaseGraphNode<>("n3");
         graph.put(n1, new HashSet<>(Collections.singletonList(n2)));
         graph.put(n2, new HashSet<>(Collections.singletonList(n3)));
         graph.put(n3, new HashSet<>(Collections.singletonList(n2)));
@@ -243,63 +293,63 @@ class TarjanTest {
         Tarjan<BaseGraphNode<String>> tarjan = new Tarjan<>(graph);
         List<Set<BaseGraphNode<String>>> sccs = tarjan.run();
         assertEquals(1, sccs.size());
-        assertTrue(sccs.contains(new HashSet<>(Arrays.asList(n2, n3))));
+        assertTrue(sccs.contains(new HashSet<>(List.of(n2, n3))));
     }
 
     @Test
     public void testAppointedStartPoints3() {
         MapWithAppointedKeySet graph1 = new MapWithAppointedKeySet();
-        BaseGraphNode<String> n1 = new BaseGraphNode<String>("n1");
-        BaseGraphNode<String> n2 = new BaseGraphNode<String>("n2");
-        BaseGraphNode<String> n3 = new BaseGraphNode<String>("n3");
-        BaseGraphNode<String> n4 = new BaseGraphNode<String>("n4");
+        BaseGraphNode<String> n1 = new BaseGraphNode<>("n1");
+        BaseGraphNode<String> n2 = new BaseGraphNode<>("n2");
+        BaseGraphNode<String> n3 = new BaseGraphNode<>("n3");
+        BaseGraphNode<String> n4 = new BaseGraphNode<>("n4");
         graph1.put(n1, new HashSet<>(Collections.singletonList(n2)));
         graph1.put(n2, new HashSet<>(Collections.singletonList(n3)));
-        graph1.put(n3, new HashSet<>(Arrays.asList(n2, n4)));
+        graph1.put(n3, new HashSet<>(List.of(n2, n4)));
         graph1.put(n4, new HashSet<>(Collections.singletonList(n3)));
         graph1.addAppointedKey(n1);
 
         Tarjan<BaseGraphNode<String>> tarjan = new Tarjan<>(graph1);
         List<Set<BaseGraphNode<String>>> sccs = tarjan.run();
         assertEquals(1, sccs.size());
-        assertTrue(sccs.contains(new HashSet<>(Arrays.asList(n2, n3, n4))));
+        assertTrue(sccs.contains(new HashSet<>(List.of(n2, n3, n4))));
     }
 
     @Test
     public void testAppointedStartPoints4() {
         MapWithAppointedKeySet graph1 = new MapWithAppointedKeySet();
-        BaseGraphNode<String> n1 = new BaseGraphNode<String>("n1");
-        BaseGraphNode<String> n2 = new BaseGraphNode<String>("n2");
-        BaseGraphNode<String> n3 = new BaseGraphNode<String>("n3");
-        BaseGraphNode<String> n4 = new BaseGraphNode<String>("n4");
-        BaseGraphNode<String> n5 = new BaseGraphNode<String>("n5");
-        BaseGraphNode<String> n6 = new BaseGraphNode<String>("n6");
+        BaseGraphNode<String> n1 = new BaseGraphNode<>("n1");
+        BaseGraphNode<String> n2 = new BaseGraphNode<>("n2");
+        BaseGraphNode<String> n3 = new BaseGraphNode<>("n3");
+        BaseGraphNode<String> n4 = new BaseGraphNode<>("n4");
+        BaseGraphNode<String> n5 = new BaseGraphNode<>("n5");
+        BaseGraphNode<String> n6 = new BaseGraphNode<>("n6");
         graph1.put(n1, new HashSet<>(Collections.singletonList(n2)));
         graph1.put(n2, new HashSet<>(Collections.singletonList(n3)));
-        graph1.put(n3, new HashSet<>(Arrays.asList(n2, n4, n5, n6)));
+        graph1.put(n3, new HashSet<>(List.of(n2, n4, n5, n6)));
         graph1.put(n4, new HashSet<>(Collections.singletonList(n3)));
         graph1.addAppointedKey(n1);
 
         Tarjan<BaseGraphNode<String>> tarjan = new Tarjan<>(graph1);
         List<Set<BaseGraphNode<String>>> sccs = tarjan.run();
         assertEquals(1, sccs.size());
-        assertTrue(sccs.contains(new HashSet<>(Arrays.asList(n2, n3, n4))));
+        assertTrue(sccs.contains(new HashSet<>(List.of(n2, n3, n4))));
     }
 
     @Test
     public void testAppointedStartPoints5() {
         MapWithAppointedKeySet graph1 = new MapWithAppointedKeySet();
-        BaseGraphNode<String> n0 = new BaseGraphNode<String>("n0");
-        BaseGraphNode<String> n1 = new BaseGraphNode<String>("n1");
-        BaseGraphNode<String> n2 = new BaseGraphNode<String>("n2");
-        BaseGraphNode<String> n3 = new BaseGraphNode<String>("n3");
-        BaseGraphNode<String> n4 = new BaseGraphNode<String>("n4");
-        BaseGraphNode<String> n5 = new BaseGraphNode<String>("n5");
-        BaseGraphNode<String> n6 = new BaseGraphNode<String>("n6");
+        BaseGraphNode<String> n0 = new BaseGraphNode<>("n0");
+        BaseGraphNode<String> n1 = new BaseGraphNode<>("n1");
+        BaseGraphNode<String> n2 = new BaseGraphNode<>("n2");
+        BaseGraphNode<String> n3 = new BaseGraphNode<>("n3");
+        BaseGraphNode<String> n4 = new BaseGraphNode<>("n4");
+        BaseGraphNode<String> n5 = new BaseGraphNode<>("n5");
+        BaseGraphNode<String> n6 = new BaseGraphNode<>("n6");
         graph1.put(n0, new HashSet<>(Collections.singletonList(n3)));
         graph1.put(n1, new HashSet<>(Collections.singletonList(n2)));
         graph1.put(n2, new HashSet<>(Collections.singletonList(n3)));
-        graph1.put(n3, new HashSet<>(Arrays.asList(n2, n4, n5, n6)));
+        graph1.put(n3, new HashSet<>(List.of(n2, n4, n5, n6)));
         graph1.put(n4, new HashSet<>(Collections.singletonList(n3)));
         graph1.addAppointedKey(n1);
         graph1.addAppointedKey(n0);
@@ -307,6 +357,6 @@ class TarjanTest {
         Tarjan<BaseGraphNode<String>> tarjan = new Tarjan<>(graph1);
         List<Set<BaseGraphNode<String>>> sccs = tarjan.run();
         assertEquals(1, sccs.size());
-        assertTrue(sccs.contains(new HashSet<>(Arrays.asList(n2, n3, n4))));
+        assertTrue(sccs.contains(new HashSet<>(List.of(n2, n3, n4))));
     }
 }

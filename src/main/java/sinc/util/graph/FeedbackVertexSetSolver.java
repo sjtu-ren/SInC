@@ -5,7 +5,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.*;
 
-public class FeedbackVertexSetSolver<T extends BaseGraphNode> {
+public class FeedbackVertexSetSolver<T extends BaseGraphNode<?>> {
 
     private final List<T> nodes;
     private final INDArray matrix;

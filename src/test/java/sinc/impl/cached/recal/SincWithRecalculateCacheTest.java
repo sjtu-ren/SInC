@@ -302,6 +302,34 @@ class SincWithRecalculateCacheTest {
         System.out.println("Done");
     }
 
+    @Test
+    void test3() {
+        final SincConfig config = new SincConfig(
+                1,
+                false,
+                false,
+                5,
+                true,
+                Eval.EvalMetric.CompressionRate,
+                0.05,
+                0.25,
+                false,
+                -1.0,
+                false,
+                false
+        );
+
+        SincWithRecalculateCache sinc = new SincWithRecalculateCache(
+                config,
+                Dataset.DBPEDIA_FACTBOOK.getPath(),
+                null,
+                null
+        );
+        sinc.run();
+        assertTrue(sinc.recover());
+        System.out.println("Done");
+    }
+
     private void checkFile(String filePath) {
         File file = new File(filePath);
         if (file.exists()) {

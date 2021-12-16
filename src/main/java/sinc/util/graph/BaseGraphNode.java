@@ -33,4 +33,9 @@ public class BaseGraphNode<T> {
     public int hashCode() {
         return Objects.hash(content);
     }
+
+    @Override
+    public String toString() {
+        return '[' + content.toString() + ']';
+    }
 }

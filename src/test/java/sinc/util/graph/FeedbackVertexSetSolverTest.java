@@ -13,8 +13,8 @@ class FeedbackVertexSetSolverTest {
     void test1() {
         /* 2 vertices cycle */
         Map<BaseGraphNode<String>, Set<BaseGraphNode<String>>> graph = new HashMap<>();
-        BaseGraphNode<String> n1 = new BaseGraphNode<String>("n1");
-        BaseGraphNode<String> n2 = new BaseGraphNode<String>("n2");
+        BaseGraphNode<String> n1 = new BaseGraphNode<>("n1");
+        BaseGraphNode<String> n2 = new BaseGraphNode<>("n2");
         graph.put(n1, new HashSet<>(Collections.singleton(n2)));
         graph.put(n2, new HashSet<>(Collections.singleton(n1)));
 
@@ -31,13 +31,13 @@ class FeedbackVertexSetSolverTest {
     void test2() {
         /* 4 vertices cycle(with redundancy) */
         Map<BaseGraphNode<String>, Set<BaseGraphNode<String>>> graph = new HashMap<>();
-        BaseGraphNode<String> n1 = new BaseGraphNode<String>("n1");
-        BaseGraphNode<String> n2 = new BaseGraphNode<String>("n2");
-        BaseGraphNode<String> n3 = new BaseGraphNode<String>("n3");
-        BaseGraphNode<String> n4 = new BaseGraphNode<String>("n4");
-        BaseGraphNode<String> n5 = new BaseGraphNode<String>("n5");
-        BaseGraphNode<String> n6 = new BaseGraphNode<String>("n6");
-        BaseGraphNode<String> n7 = new BaseGraphNode<String>("n7");
+        BaseGraphNode<String> n1 = new BaseGraphNode<>("n1");
+        BaseGraphNode<String> n2 = new BaseGraphNode<>("n2");
+        BaseGraphNode<String> n3 = new BaseGraphNode<>("n3");
+        BaseGraphNode<String> n4 = new BaseGraphNode<>("n4");
+        BaseGraphNode<String> n5 = new BaseGraphNode<>("n5");
+        BaseGraphNode<String> n6 = new BaseGraphNode<>("n6");
+        BaseGraphNode<String> n7 = new BaseGraphNode<>("n7");
         graph.put(n1, new HashSet<>(Arrays.asList(n2, n5)));
         graph.put(n2, new HashSet<>(Collections.singletonList(n3)));
         graph.put(n3, new HashSet<>(Collections.singletonList(n4)));
@@ -58,13 +58,13 @@ class FeedbackVertexSetSolverTest {
     void test3() {
         /* 3 vertices cycle(with 2 self loops and redundancy) */
         Map<BaseGraphNode<String>, Set<BaseGraphNode<String>>> graph = new HashMap<>();
-        BaseGraphNode<String> n1 = new BaseGraphNode<String>("n1");
-        BaseGraphNode<String> n2 = new BaseGraphNode<String>("n2");
-        BaseGraphNode<String> n3 = new BaseGraphNode<String>("n3");
-        BaseGraphNode<String> n4 = new BaseGraphNode<String>("n4");
-        BaseGraphNode<String> n5 = new BaseGraphNode<String>("n5");
-        BaseGraphNode<String> n6 = new BaseGraphNode<String>("n6");
-        BaseGraphNode<String> n7 = new BaseGraphNode<String>("n7");
+        BaseGraphNode<String> n1 = new BaseGraphNode<>("n1");
+        BaseGraphNode<String> n2 = new BaseGraphNode<>("n2");
+        BaseGraphNode<String> n3 = new BaseGraphNode<>("n3");
+        BaseGraphNode<String> n4 = new BaseGraphNode<>("n4");
+        BaseGraphNode<String> n5 = new BaseGraphNode<>("n5");
+        BaseGraphNode<String> n6 = new BaseGraphNode<>("n6");
+        BaseGraphNode<String> n7 = new BaseGraphNode<>("n7");
         graph.put(n1, new HashSet<>(Arrays.asList(n1, n2)));
         graph.put(n2, new HashSet<>(Arrays.asList(n2, n3)));
         graph.put(n3, new HashSet<>(Arrays.asList(n6, n1)));
@@ -87,12 +87,12 @@ class FeedbackVertexSetSolverTest {
     void test4() {
         /* 6 vertices, 3 cycles */
         Map<BaseGraphNode<String>, Set<BaseGraphNode<String>>> graph = new HashMap<>();
-        BaseGraphNode<String> n1 = new BaseGraphNode<String>("n1");
-        BaseGraphNode<String> n2 = new BaseGraphNode<String>("n2");
-        BaseGraphNode<String> n3 = new BaseGraphNode<String>("n3");
-        BaseGraphNode<String> n4 = new BaseGraphNode<String>("n4");
-        BaseGraphNode<String> n5 = new BaseGraphNode<String>("n5");
-        BaseGraphNode<String> n6 = new BaseGraphNode<String>("n6");
+        BaseGraphNode<String> n1 = new BaseGraphNode<>("n1");
+        BaseGraphNode<String> n2 = new BaseGraphNode<>("n2");
+        BaseGraphNode<String> n3 = new BaseGraphNode<>("n3");
+        BaseGraphNode<String> n4 = new BaseGraphNode<>("n4");
+        BaseGraphNode<String> n5 = new BaseGraphNode<>("n5");
+        BaseGraphNode<String> n6 = new BaseGraphNode<>("n6");
         graph.put(n1, new HashSet<>(Collections.singletonList(n2)));
         graph.put(n2, new HashSet<>(Collections.singletonList(n3)));
         graph.put(n3, new HashSet<>(Arrays.asList(n1, n4)));
@@ -114,10 +114,10 @@ class FeedbackVertexSetSolverTest {
     void test5() {
         /* 4 vertices complete graph */
         Map<BaseGraphNode<String>, Set<BaseGraphNode<String>>> graph = new HashMap<>();
-        BaseGraphNode<String> n1 = new BaseGraphNode<String>("n1");
-        BaseGraphNode<String> n2 = new BaseGraphNode<String>("n2");
-        BaseGraphNode<String> n3 = new BaseGraphNode<String>("n3");
-        BaseGraphNode<String> n4 = new BaseGraphNode<String>("n4");
+        BaseGraphNode<String> n1 = new BaseGraphNode<>("n1");
+        BaseGraphNode<String> n2 = new BaseGraphNode<>("n2");
+        BaseGraphNode<String> n3 = new BaseGraphNode<>("n3");
+        BaseGraphNode<String> n4 = new BaseGraphNode<>("n4");
         graph.put(n1, new HashSet<>(Arrays.asList(n2, n3, n4)));
         graph.put(n2, new HashSet<>(Arrays.asList(n1, n3, n4)));
         graph.put(n3, new HashSet<>(Arrays.asList(n1, n2, n4)));
@@ -134,13 +134,28 @@ class FeedbackVertexSetSolverTest {
     }
 
     @Test
+    void test6() {
+        /* 1 vertex self loop */
+        Map<BaseGraphNode<String>, Set<BaseGraphNode<String>>> graph = new HashMap<>();
+        BaseGraphNode<String> n1 = new BaseGraphNode<>("n1");
+        graph.put(n1, new HashSet<>(List.of(n1)));
+
+        Set<BaseGraphNode<String>> scc = new HashSet<>(List.of(n1));
+
+        FeedbackVertexSetSolver<BaseGraphNode<String>> solver = new FeedbackVertexSetSolver<>(graph, scc);
+        Set<BaseGraphNode<String>> cover = solver.run();
+
+        assertEquals(new HashSet<>(List.of(n1)), cover);
+    }
+
+    @Test
     void testMultipleInOneGraph() {
         Map<BaseGraphNode<String>, Set<BaseGraphNode<String>>> graph = new HashMap<>();
-        BaseGraphNode<String> n1 = new BaseGraphNode<String>("n1");
-        BaseGraphNode<String> n2 = new BaseGraphNode<String>("n2");
-        BaseGraphNode<String> n3 = new BaseGraphNode<String>("n3");
-        BaseGraphNode<String> n4 = new BaseGraphNode<String>("n4");
-        BaseGraphNode<String> n5 = new BaseGraphNode<String>("n5");
+        BaseGraphNode<String> n1 = new BaseGraphNode<>("n1");
+        BaseGraphNode<String> n2 = new BaseGraphNode<>("n2");
+        BaseGraphNode<String> n3 = new BaseGraphNode<>("n3");
+        BaseGraphNode<String> n4 = new BaseGraphNode<>("n4");
+        BaseGraphNode<String> n5 = new BaseGraphNode<>("n5");
         graph.put(n1, new HashSet<>(Collections.singletonList(n2)));
         graph.put(n2, new HashSet<>(Collections.singletonList(n3)));
         graph.put(n3, new HashSet<>(Collections.singletonList(n1)));
