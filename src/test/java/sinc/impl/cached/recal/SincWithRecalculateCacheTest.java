@@ -330,6 +330,34 @@ class SincWithRecalculateCacheTest {
         System.out.println("Done");
     }
 
+    @Test
+    void testOS() {
+        final SincConfig config = new SincConfig(
+                1,
+                false,
+                false,
+                3,
+                true,
+                Eval.EvalMetric.CompressionCapacity,
+                0.05,
+                0.25,
+                false,
+                -1.0,
+                false,
+                false
+        );
+
+        SincWithRecalculateCache sinc = new SincWithRecalculateCache(
+                config,
+                Dataset.ONLINE_SALES.getPath(),
+                "OS_Cr_δ_3.result",
+                "OS_Cr_δ_3.log"
+        );
+        sinc.run();
+        assertTrue(sinc.recover());
+        System.out.println("Done");
+    }
+
     private void checkFile(String filePath) {
         File file = new File(filePath);
         if (file.exists()) {
