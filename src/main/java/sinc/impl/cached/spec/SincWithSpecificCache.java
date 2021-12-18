@@ -34,4 +34,9 @@ public class SincWithSpecificCache extends CachedSinc {
     protected Rule getStartRule(String headFunctor, Set<RuleFingerPrint> cache) {
         return new SpecificCachedRule(headFunctor, cache, kb);
     }
+
+    @Override
+    public String getModelName() {
+        return "Cs";
+    }
 }

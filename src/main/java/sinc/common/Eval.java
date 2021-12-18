@@ -6,10 +6,12 @@ import java.util.Objects;
 
 public class Eval {
     public enum EvalMetric {
-        CompressionRate("τ"),
-        CompressionCapacity("δ"),
-        InfoGain("h");
+        CompressionRate("τ", "Compression Rate"),
+        CompressionCapacity("δ", "Compression Capacity"),
+        InfoGain("h", "Information Gain"),
+        CumulatedInfo("H", "Cumulated Information");
         private final String name;
+        private final String description;
 
         private static final Map<String, EvalMetric> name2ValMap = new HashMap<>();
         static {
@@ -18,12 +20,17 @@ public class Eval {
             }
         }
 
-        EvalMetric(String name) {
+        EvalMetric(String name, String description) {
             this.name = name;
+            this.description = description;
         }
 
         public String getName() {
             return name;
+        }
+
+        public String getDescription() {
+            return description;
         }
 
         static public EvalMetric getByName(String name) {
@@ -61,6 +68,7 @@ public class Eval {
     private final double compRatio;
     private final double compCapacity;
     private final double infoGain;
+    private final double cumulatedInfo;
 
     public Eval(Eval previousEval, double posCnt, double allCnt, int ruleSize) {
         this.posCnt = posCnt;
@@ -84,6 +92,7 @@ public class Eval {
                 );
             }
         }
+        this.cumulatedInfo = ((null == previousEval) ? 0 : previousEval.cumulatedInfo) + this.infoGain;
     }
 
     public double value(EvalMetric type) {
@@ -94,6 +103,8 @@ public class Eval {
                 return compCapacity;
             case InfoGain:
                 return infoGain;
+            case CumulatedInfo:
+                return cumulatedInfo;
             default:
                 return 0;
         }
@@ -118,7 +129,7 @@ public class Eval {
     @Override
     public String toString() {
         return String.format(
-                "(+)%f; (-)%f; |%d|; δ=%f; τ=%f; h=%f", posCnt, negCnt, ruleSize, compCapacity, compRatio, infoGain
+                "(+)%f; (-)%f; |%d|; δ=%f; τ=%f; h=%f; H=%f", posCnt, negCnt, ruleSize, compCapacity, compRatio, infoGain, cumulatedInfo
         );
     }
 

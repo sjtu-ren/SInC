@@ -93,4 +93,9 @@ public class Sinc4Symmetric extends SincWithTabuPruning {
 
         return extensions;
     }
+
+    @Override
+    public String getModelName() {
+        return "Sym";
+    }
 }

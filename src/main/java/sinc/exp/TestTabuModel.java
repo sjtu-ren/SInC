@@ -1,6 +1,7 @@
 package sinc.exp;
 
 import sinc.SincConfig;
+import sinc.common.Dataset;
 import sinc.common.Eval;
 import sinc.impl.pruned.tabu.SincWithTabuPruning;
 

@@ -198,6 +198,11 @@ class SInCTest {
 
         @Override
         protected void recordRuleStatus(Rule rule, Rule.UpdateStatus updateStatus) {}
+
+        @Override
+        public String getModelName() {
+            return "Impl";
+        }
     }
 
     public static void main(String[] args) {

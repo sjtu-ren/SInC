@@ -3,7 +3,6 @@ package sinc.impl.cached.recal;
 import sinc.SincConfig;
 import sinc.common.Rule;
 import sinc.common.RuleFingerPrint;
-import sinc.common.UpdateResult;
 import sinc.impl.cached.CachedSinc;
 
 import java.util.Set;
@@ -35,5 +34,10 @@ public class SincWithRecalculateCache extends CachedSinc {
     @Override
     protected Rule getStartRule(String headFunctor, Set<RuleFingerPrint> cache) {
         return new RecalculateCachedRule(headFunctor, cache, kb);
+    }
+
+    @Override
+    public String getModelName() {
+        return "Cr";
     }
 }

@@ -58,4 +58,9 @@ public class SincWithTabuPruning extends SincWithRecalculateCache {
         super.showMonitor();
         tabuMonitor.show(logger);
     }
+
+    @Override
+    public String getModelName() {
+        return "Ct";
+    }
 }

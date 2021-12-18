@@ -1,4 +1,4 @@
-package sinc.exp;
+package sinc.common;
 
 import java.util.HashMap;
 import java.util.Map;

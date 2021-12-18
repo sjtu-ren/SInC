@@ -18,7 +18,7 @@ President	USA	Trump
 Family	ginny	harry	albus
 ```
 
-## 2. Usage
+## 2. Use SInC Implementation
 
 The basic class for compression is the abstract class `SInC`. To compress relational data, simply create a SInC implementation object and invoke `run()` on it. For exmaple:
 
@@ -45,3 +45,42 @@ Current implementation of `SInC` is `SincWithTabuPruning`, other implementations
 - `kbPath`: The path to the input data file
 - `dumpPath`: The path to compressed data file. If null, output will go to the terminal
 - `logPath`: The path to a log file. If null, output will go to the terminal
+
+## 3. Use SInC Jar
+
+The `Main` class in package `sinc` provides a `main()` method that encloses all features. To use this entry, you can package the whole project with dependencies and run with: `java -jar sinc.jar [Options]`. The following displays the usage:
+
+```
+usage: java -jar sinc.jar [-b <b>] [-c <cc>] [-d <path> | -D <name>]  [-e
+       <name>] [-f <fc>] [-h] [-l <path>] [-m <name>] [-r <path>] [-v]
+ -b,--beam-width <b>        Bean search width (Default 3)
+ -c,--const-coverage <cc>   Set constant coverage threshold (Default 0.25)
+ -d,--data-path <path>      Path to a data file
+ -D,--dataset <name>        Select in the prepared datasets. Available
+                            options are: E(Elti), D(Dunur), S(Student
+                            Loan), DBf(DBpedia.factbook),
+                            DBl(DBpedia.lobidorg), WKc(WebKB.Cornell),
+                            WKt(WebKB.Texas), WKw(WebKB.Washington),
+                            WKi(WebKB.Wisconsin), N(NELL), U(UMLS),
+                            WN(WN18), FB(FB15K), YS(YagoSample),
+                            Fs(Family.simple), Fm(Family.medium),
+                            OS(Online Sales), RR(Restaurant Ranking),
+                            Test(Test)
+ -e,--eval-metric <name>    Select in the evaluation metrics (Default δ).
+                            Available options are: τ(Compression Rate),
+                            δ(Compression Capacity), h(Information Gain),
+                            H(Cumulated Information)
+ -f,--fact-coverage <fc>    Set fact coverage threshold (Default 0.05)
+ -h,--help                  Display this help
+ -l,--log-path <path>       Path to where the log is dumped (StdOut if not
+                            appointed)
+ -m,--model <name>          Select in the models (Default T). Available
+                            options are: C(SInC with compact cache),
+                            M(SInC with materialized cache), T(Model C
+                            with tabu pruning), Y(Model T focus on
+                            symmetric relations (for experiments only))
+ -r,--result-path <path>    Path to where the result is dumped (StdOut if
+                            not appointed)
+ -v,--validate              Validate result after compression
+```
+

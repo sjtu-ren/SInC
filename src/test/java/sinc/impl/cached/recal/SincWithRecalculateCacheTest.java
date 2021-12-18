@@ -3,7 +3,7 @@ package sinc.impl.cached.recal;
 import org.junit.jupiter.api.Test;
 import sinc.SincConfig;
 import sinc.common.*;
-import sinc.exp.Dataset;
+import sinc.common.Dataset;
 import sinc.util.datagen.FamilyRelationGenerator;
 
 import java.io.File;

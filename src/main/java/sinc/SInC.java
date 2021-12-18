@@ -5,9 +5,7 @@ import sinc.util.graph.BaseGraphNode;
 import sinc.util.graph.FeedbackVertexSetSolver;
 import sinc.util.graph.Tarjan;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.*;
 
 public abstract class SInC {
@@ -479,6 +477,8 @@ public abstract class SInC {
     protected void targetDone(String functor) {
         /* 这里什么也不做，给后续处理留空间 */
     }
+
+    public abstract String getModelName();
 
     private void runHandler() {
         final long time_start = System.currentTimeMillis();

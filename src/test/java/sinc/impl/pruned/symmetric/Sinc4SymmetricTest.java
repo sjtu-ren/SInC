@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 import sinc.SInC;
 import sinc.SincConfig;
 import sinc.common.Eval;
-import sinc.exp.Dataset;
+import sinc.common.Dataset;
 
 import static org.junit.jupiter.api.Assertions.*;
 
