@@ -6,14 +6,42 @@ import sinc.util.MultiSet;
 import java.util.*;
 
 public class MemKB {
-    private final Set<Predicate> originalKB = new HashSet<>();
-    private final Map<String, Set<Predicate>> functor2Facts = new HashMap<>();
+    static class ColumnPairInfo {
+        final String functor1;
+        final int idx1;
+        final String functor2;
+        final int idx2;
+
+        public ColumnPairInfo(String functor1, int idx1, String functor2, int idx2) {
+            this.functor1 = functor1;
+            this.idx1 = idx1;
+            this.functor2 = functor2;
+            this.idx2 = idx2;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ColumnPairInfo that = (ColumnPairInfo) o;
+            return idx1 == that.idx1 && idx2 == that.idx2 && Objects.equals(functor1, that.functor1) && Objects.equals(functor2, that.functor2);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(functor1, idx1, functor2, idx2);
+        }
+    }
+
+    protected final Set<Predicate> originalKB = new HashSet<>();
+    protected final Map<String, Set<Predicate>> functor2Facts = new HashMap<>();
     protected final Map<String, Integer> functor2ArityMap = new HashMap<>();
-    private final Map<String, Map<String, Set<Predicate>>[]> functor2ArgIdx = new HashMap<>();
-    private final Set<String> constants = new HashSet<>();
-    private final Set<Predicate> provedFacts = new HashSet<>();
-    private final Map<String, MultiSet<String>[]> functor2ArgSetsMap = new HashMap<>();
-    private final Map<String, List<String>[]> functor2PromisingConstMap = new HashMap<>();
+    protected final Map<String, Map<String, Set<Predicate>>[]> functor2ArgIdx = new HashMap<>();
+    protected final Set<String> constants = new HashSet<>();
+    protected final Set<Predicate> provedFacts = new HashSet<>();
+    protected final Map<String, MultiSet<String>[]> functor2ArgSetsMap = new HashMap<>();
+    protected final Map<String, List<String>[]> functor2PromisingConstMap = new HashMap<>();
+    protected final Set<ColumnPairInfo> similarColumnPairs = new HashSet<>();
 
     public void declareFunctor(String functor, int arity) {
         functor2Facts.computeIfAbsent(functor, k -> new HashSet<>());
@@ -90,6 +118,7 @@ public class MemKB {
     }
 
     public void calculatePromisingConstants(double threshold) {
+        functor2PromisingConstMap.clear();
         for (Map.Entry<String, MultiSet<String>[]> entry: functor2ArgSetsMap.entrySet()) {
             MultiSet<String>[] arg_sets = entry.getValue();
             List<String>[] arg_const_lists = new List[arg_sets.length];
@@ -100,12 +129,51 @@ public class MemKB {
         }
     }
 
+    public void calculateSimilarColumnPairs(double threshold) {
+        similarColumnPairs.clear();
+        Map.Entry<String, MultiSet<String>[]>[] entries = functor2ArgSetsMap.entrySet().toArray(new Map.Entry[0]);
+
+        for (int i = 0; i < entries.length; i++) {
+            String functor1 = entries[i].getKey();
+            MultiSet<String>[] arg_sets1 = entries[i].getValue();
+            for (int j = i; j < entries.length; j++) {
+                String functor2 = entries[j].getKey();
+                MultiSet<String>[] arg_sets2 = entries[j].getValue();
+                for (int ii = 0; ii < arg_sets1.length; ii++) {
+                    for (int jj = 0; jj < arg_sets2.length; jj++) {
+                        double similarity = arg_sets1[ii].jaccardSimilarity(arg_sets2[jj]);
+                        if (similarity >= threshold) {
+                            similarColumnPairs.add(new ColumnPairInfo(functor1,ii,functor2,jj));
+                            similarColumnPairs.add(new ColumnPairInfo(functor2,jj,functor1,ii));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public boolean columnsSimilar(String functor1, int idx1, String functor2, int idx2) {
+        return similarColumnPairs.contains(new ColumnPairInfo(functor1, idx1, functor2, idx2));
+    }
+
     public int totalConstants() {
         return constants.size();
     }
 
     public int totalFacts() {
         return originalKB.size();
+    }
+
+    public long totalColumnPairs() {
+        long arity_cnt = 0;
+        for (Map.Entry<String, Integer> entry: functor2ArityMap.entrySet()) {
+            arity_cnt += entry.getValue();
+        }
+        return arity_cnt * arity_cnt;
+    }
+
+    public long similarColumnPairs() {
+        return similarColumnPairs.size();
     }
 
     public int getArity(String functor) {

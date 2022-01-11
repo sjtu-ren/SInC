@@ -151,6 +151,12 @@ public abstract class SInC {
     protected List<Rule> findExtension(final Rule rule) throws InterruptedSignal {
         List<Rule> extensions = new ArrayList<>();
 
+        Eval eval = rule.getEval();
+        if (config.stopCompressionRate <= eval.value(Eval.EvalMetric.CompressionRate) || 0 == eval.getNegCnt()) {
+            /* 如果到达停止阈值，不再进行extension */
+            return extensions;
+        }
+
         /* 先找到所有空白的参数 */
         class ArgPos {
             public final int predIdx;
@@ -174,13 +180,19 @@ public abstract class SInC {
         /* 尝试增加已知变量 */
         final Map<String, Integer> func_2_arity_map = getFunctor2ArityMap();
         for (int var_id = 0; var_id < rule.usedBoundedVars(); var_id++) {
+            List<VarIndicator> var_locations = rule.getVarLocations(var_id);
             for (ArgPos vacant: vacant_list) {
-                /* 尝试将已知变量填入空白参数 */
-                final Rule new_rule = rule.clone();
-                final Rule.UpdateStatus update_status = new_rule.boundFreeVar2ExistingVar(
-                        vacant.predIdx, vacant.argIdx, var_id
-                );
-                checkThenAddRule(extensions, update_status, new_rule);
+                for (VarIndicator var_location: var_locations) {
+                    if (columnSimilar(rule.getPredicate(vacant.predIdx).functor, vacant.argIdx, var_location.functor, var_location.idx)) {
+                        /* 尝试将已知变量填入空白参数 */
+                        final Rule new_rule = rule.clone();
+                        final Rule.UpdateStatus update_status = new_rule.boundFreeVar2ExistingVar(
+                                vacant.predIdx, vacant.argIdx, var_id
+                        );
+                        checkThenAddRule(extensions, update_status, new_rule);
+                        break;
+                    }
+                }
             }
 
             for (Map.Entry<String, Integer> entry: func_2_arity_map.entrySet()) {
@@ -188,11 +200,16 @@ public abstract class SInC {
                 final String functor = entry.getKey();
                 final int arity = entry.getValue();
                 for (int arg_idx = 0; arg_idx < arity; arg_idx++) {
-                    final Rule new_rule = rule.clone();
-                    final Rule.UpdateStatus update_status = new_rule.boundFreeVar2ExistingVar(
-                            functor, arity, arg_idx, var_id
-                    );
-                    checkThenAddRule(extensions, update_status, new_rule);
+                    for (VarIndicator var_location: var_locations) {
+                        if (columnSimilar(functor, arg_idx, var_location.functor, var_location.idx)) {
+                            final Rule new_rule = rule.clone();
+                            final Rule.UpdateStatus update_status = new_rule.boundFreeVar2ExistingVar(
+                                    functor, arity, arg_idx, var_id
+                            );
+                            checkThenAddRule(extensions, update_status, new_rule);
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -201,6 +218,7 @@ public abstract class SInC {
         for (int i = 0; i < vacant_list.size(); i++) {
             /* 找到新变量的第一个位置 */
             final ArgPos first_vacant = vacant_list.get(i);
+            final String functor1 = rule.getPredicate(first_vacant.predIdx).functor;
 
             /* 拓展一个常量 */
             final Predicate predicate = rule.getPredicate(first_vacant.predIdx);
@@ -217,22 +235,26 @@ public abstract class SInC {
             for (int j = i + 1; j < vacant_list.size(); j++) {
                 /* 新变量的第二个位置可以是当前rule中的其他空位 */
                 final ArgPos second_vacant = vacant_list.get(j);
-                final Rule new_rule = rule.clone();
-                final Rule.UpdateStatus update_status = new_rule.boundFreeVars2NewVar(
-                        first_vacant.predIdx, first_vacant.argIdx, second_vacant.predIdx, second_vacant.argIdx
-                );
-                checkThenAddRule(extensions, update_status, new_rule);
+                if (columnSimilar(functor1, first_vacant.argIdx,rule.getPredicate(second_vacant.predIdx).functor, second_vacant.argIdx)) {
+                    final Rule new_rule = rule.clone();
+                    final Rule.UpdateStatus update_status = new_rule.boundFreeVars2NewVar(
+                            first_vacant.predIdx, first_vacant.argIdx, second_vacant.predIdx, second_vacant.argIdx
+                    );
+                    checkThenAddRule(extensions, update_status, new_rule);
+                }
             }
             for (Map.Entry<String, Integer> entry: func_2_arity_map.entrySet()) {
                 /* 新变量的第二个位置也可以是拓展一个谓词以后的位置 */
                 final String functor = entry.getKey();
                 final int arity = entry.getValue();
                 for (int arg_idx = 0; arg_idx < arity; arg_idx++) {
-                    final Rule new_rule = rule.clone();
-                    final Rule.UpdateStatus update_status = new_rule.boundFreeVars2NewVar(
-                            functor, arity, arg_idx, first_vacant.predIdx, first_vacant.argIdx
-                    );
-                    checkThenAddRule(extensions, update_status, new_rule);
+                    if (columnSimilar(functor1, first_vacant.argIdx, functor, arg_idx)) {
+                        final Rule new_rule = rule.clone();
+                        final Rule.UpdateStatus update_status = new_rule.boundFreeVars2NewVar(
+                                functor, arity, arg_idx, first_vacant.predIdx, first_vacant.argIdx
+                        );
+                        checkThenAddRule(extensions, update_status, new_rule);
+                    }
                 }
             }
         }
@@ -479,6 +501,8 @@ public abstract class SInC {
     }
 
     public abstract String getModelName();
+
+    protected abstract boolean columnSimilar(String functor1, int idx1, String functor2, int idx2);
 
     private void runHandler() {
         final long time_start = System.currentTimeMillis();

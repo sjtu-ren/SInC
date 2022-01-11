@@ -28,6 +28,8 @@ public abstract class CachedSinc extends SInC {
                         config.evalMetric,
                         config.minFactCoverage,
                         config.minConstantCoverage,
+                        config.minColumnSimilarity,
+                        config.stopCompressionRate,
                         true,
                         -1.0,
                         false,
@@ -53,18 +55,21 @@ public abstract class CachedSinc extends SInC {
                 kb.addFact(predicate);
             }
             kb.calculatePromisingConstants(config.minConstantCoverage);
+            kb.calculateSimilarColumnPairs(config.minColumnSimilarity);
 
             return new KbStatistics(
                     kb.totalFacts(),
                     kb.getFunctor2ArityMap().size(),
                     kb.totalConstants(),
                     kb.getActualConstantSubstitutions(),
-                    kb.getTotalConstantSubstitutions()
+                    kb.getTotalConstantSubstitutions(),
+                    kb.similarColumnPairs(),
+                    kb.totalColumnPairs()
             );
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return new KbStatistics(-1, -1, -1, -1, -1);
+        return new KbStatistics(-1, -1, -1, -1, -1, -1, -1);
     }
 
     @Override
@@ -80,6 +85,11 @@ public abstract class CachedSinc extends SInC {
     @Override
     protected Map<String, List<String>[]> getFunctor2PromisingConstantMap() {
         return kb.getFunctor2PromisingConstantMap();
+    }
+
+    @Override
+    protected boolean columnSimilar(String functor1, int idx1, String functor2, int idx2) {
+        return kb.columnsSimilar(functor1, idx1, functor2, idx2);
     }
 
     @Override

@@ -143,7 +143,9 @@ class SInCTest {
                     kb.getFunctor2ArityMap().size(),
                     kb.totalConstants(),
                     4,
-                    kb.getTotalConstantSubstitutions()
+                    kb.getTotalConstantSubstitutions(),
+                    kb.similarColumnPairs(),
+                    kb.totalColumnPairs()
             );
         }
 
@@ -201,29 +203,35 @@ class SInCTest {
 
         @Override
         public String getModelName() {
-            return "Impl";
+            return "TestImpl";
+        }
+
+        @Override
+        protected boolean columnSimilar(String functor1, int idx1, String functor2, int idx2) {
+            return true;
         }
     }
 
-    public static void main(String[] args) {
-        SincImpl sinc = new SincImpl(new SincConfig(
-                1,
-                false,
-                false,
-                2,
-                true,
-                Eval.EvalMetric.CompressionRate,
-                -1,
-                0,
-                false,
-                -1,
-                false,
-                false),
-                null,null,null
-        );
-        sinc.run();
-        System.out.println("Finished");
-    }
+//    public static void main(String[] args) {
+//        SincImpl sinc = new SincImpl(new SincConfig(
+//                1,
+//                false,
+//                false,
+//                2,
+//                true,
+//                Eval.EvalMetric.CompressionRate,
+//                -1,
+//                0,
+//                0,
+//                false,
+//                -1,
+//                false,
+//                false),
+//                null,null,null
+//        );
+//        sinc.run();
+//        System.out.println("Finished");
+//    }
 
     @Test
     void testFamily1() {
@@ -236,6 +244,8 @@ class SInCTest {
                 Eval.EvalMetric.CompressionRate,
                 -1,
                 0,
+                0,
+                1,
                 false,
                 -1,
                 false,
@@ -251,7 +261,7 @@ class SInCTest {
         expected_branch_infos.add(new PerformanceMonitor.BranchInfo(2, 27, 0));
         expected_branch_infos.add(new PerformanceMonitor.BranchInfo(2, 9, 0));
         assertEquals(expected_branch_infos, monitor.branchProgress);
-        assertEquals(12, monitor.invalidSearches);
+        assertEquals(22, monitor.invalidSearches);
         assertEquals(2, monitor.duplications);
         assertEquals(0, monitor.fcFilteredRules);
         assertEquals(29, monitor.totalConstantSubstitutions);
@@ -269,6 +279,8 @@ class SInCTest {
                 Eval.EvalMetric.CompressionRate,
                 0.22, // FC < but close to 2/9
                 0,
+                0,
+                1,
                 false,
                 -1,
                 false,
@@ -284,7 +296,7 @@ class SInCTest {
         expected_branch_infos.add(new PerformanceMonitor.BranchInfo(2, 10, 0));
         expected_branch_infos.add(new PerformanceMonitor.BranchInfo(2, 3, 0));
         assertEquals(expected_branch_infos, monitor.branchProgress);
-        assertEquals(12, monitor.invalidSearches);
+        assertEquals(22, monitor.invalidSearches);
         assertEquals(2, monitor.duplications);
         assertEquals(57, monitor.fcFilteredRules);
         assertEquals(29, monitor.totalConstantSubstitutions);
@@ -302,6 +314,8 @@ class SInCTest {
                 Eval.EvalMetric.CompressionRate,
                 0.33, // FC < but close to 3/9
                 0,
+                0,
+                1,
                 false,
                 -1,
                 false,
@@ -316,9 +330,9 @@ class SInCTest {
         expected_branch_infos.add(new PerformanceMonitor.BranchInfo(1, 5, 0));
         expected_branch_infos.add(new PerformanceMonitor.BranchInfo(2, 3, 0));
         expected_branch_infos.add(new PerformanceMonitor.BranchInfo(2, 9, 0));
-        assertEquals(13, monitor.invalidSearches);
-        assertEquals(3, monitor.duplications);
-        assertEquals(59, monitor.fcFilteredRules);
+        assertEquals(22, monitor.invalidSearches);
+        assertEquals(6, monitor.duplications);
+        assertEquals(56, monitor.fcFilteredRules);
         assertEquals(29, monitor.totalConstantSubstitutions);
         assertEquals(4, monitor.actualConstantSubstitutions);
         assertEquals(expected_branch_infos, monitor.branchProgress);

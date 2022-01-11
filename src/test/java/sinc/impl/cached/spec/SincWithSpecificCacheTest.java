@@ -38,75 +38,79 @@ class SincWithSpecificCacheTest {
                 Eval.EvalMetric.CompressionCapacity,
                 Eval.EvalMetric.CompressionRate
         }) {
-            final SincConfig config = new SincConfig(
-                    1,
-                    false,
-                    false,
-                    5,
-                    true,
-                    eval_type,
-                    0.05,
-                    0.25,
-                    false,
-                    -1.0,
-                    false,
-                    false
-            );
+            for (double column_similarity : new double[]{0, 0.1}) {
+                final SincConfig config = new SincConfig(
+                        1,
+                        false,
+                        false,
+                        5,
+                        true,
+                        eval_type,
+                        0.05,
+                        0.25,
+                        column_similarity,
+                        1,
+                        false,
+                        -1.0,
+                        false,
+                        false
+                );
 
-            SincWithSpecificCache sinc = new SincWithSpecificCache(
-                    config,
-                    tmp_bk_file_path,
-                    null,
-                    null
-            );
-            sinc.run();
+                SincWithSpecificCache sinc = new SincWithSpecificCache(
+                        config,
+                        tmp_bk_file_path,
+                        null,
+                        null
+                );
+                sinc.run();
 
-            try {
-                Set<RuleFingerPrint> rule_set_sinc = new HashSet<>();
-                for (Rule r: sinc.getHypothesis()) {
-                    rule_set_sinc.add(r.getFingerPrint());
+                try {
+                    Set<RuleFingerPrint> rule_set_sinc = new HashSet<>();
+                    for (Rule r : sinc.getHypothesis()) {
+                        rule_set_sinc.add(r.getFingerPrint());
+                    }
+                    final Predicate head1 = new Predicate(
+                            FamilyRelationGenerator.OtherPredicate.GENDER.getName(),
+                            FamilyRelationGenerator.ARITY
+                    );
+                    head1.args[0] = new Variable(0);
+                    head1.args[1] = new Constant(
+                            CONSTANT_ID,
+                            FamilyRelationGenerator.Gender.MALE.getName()
+                    );
+                    final Predicate body1 = new Predicate(
+                            FamilyRelationGenerator.FamilyPredicate.FATHER.getName(),
+                            FamilyRelationGenerator.ARITY
+                    );
+                    body1.args[0] = new Variable(0);
+                    List<Predicate> r1 = new ArrayList<>(Arrays.asList(head1, body1));
+                    assertEquals("gender(X0,male):-father(X0,?)", rule2String(r1));
+
+                    final Predicate head2 = new Predicate(
+                            FamilyRelationGenerator.OtherPredicate.GENDER.getName(),
+                            FamilyRelationGenerator.ARITY
+                    );
+                    head2.args[0] = new Variable(0);
+                    head2.args[1] = new Constant(
+                            CONSTANT_ID,
+                            FamilyRelationGenerator.Gender.FEMALE.getName()
+                    );
+                    final Predicate body2 = new Predicate(
+                            FamilyRelationGenerator.FamilyPredicate.MOTHER.getName(),
+                            FamilyRelationGenerator.ARITY
+                    );
+                    body2.args[0] = new Variable(0);
+                    List<Predicate> r2 = new ArrayList<>(Arrays.asList(head2, body2));
+                    assertEquals("gender(X0,female):-mother(X0,?)", rule2String(r2));
+
+                    final Set<RuleFingerPrint> expected_rules = new HashSet<>();
+                    expected_rules.add(new RuleFingerPrint(r1));
+                    expected_rules.add(new RuleFingerPrint(r2));
+                    assertEquals(expected_rules, rule_set_sinc);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    fail();
                 }
-                final Predicate head1 = new Predicate(
-                        FamilyRelationGenerator.OtherPredicate.GENDER.getName(),
-                        FamilyRelationGenerator.ARITY
-                );
-                head1.args[0] = new Variable(0);
-                head1.args[1] = new Constant(
-                        CONSTANT_ID,
-                        FamilyRelationGenerator.Gender.MALE.getName()
-                );
-                final Predicate body1 = new Predicate(
-                        FamilyRelationGenerator.FamilyPredicate.FATHER.getName(),
-                        FamilyRelationGenerator.ARITY
-                );
-                body1.args[0] = new Variable(0);
-                List<Predicate> r1 = new ArrayList<>(Arrays.asList(head1, body1));
-                assertEquals("gender(X0,male):-father(X0,?)", rule2String(r1));
-
-                final Predicate head2 = new Predicate(
-                        FamilyRelationGenerator.OtherPredicate.GENDER.getName(),
-                        FamilyRelationGenerator.ARITY
-                );
-                head2.args[0] = new Variable(0);
-                head2.args[1] = new Constant(
-                        CONSTANT_ID,
-                        FamilyRelationGenerator.Gender.FEMALE.getName()
-                );
-                final Predicate body2 = new Predicate(
-                        FamilyRelationGenerator.FamilyPredicate.MOTHER.getName(),
-                        FamilyRelationGenerator.ARITY
-                );
-                body2.args[0] = new Variable(0);
-                List<Predicate> r2 = new ArrayList<>(Arrays.asList(head2, body2));
-                assertEquals("gender(X0,female):-mother(X0,?)", rule2String(r2));
-
-                final Set<RuleFingerPrint> expected_rules = new HashSet<>();
-                expected_rules.add(new RuleFingerPrint(r1));
-                expected_rules.add(new RuleFingerPrint(r2));
-                assertEquals(expected_rules, rule_set_sinc);
-            } catch (Exception e) {
-                e.printStackTrace();
-                fail();
             }
         }
 
@@ -137,107 +141,111 @@ class SincWithSpecificCacheTest {
                 Eval.EvalMetric.CompressionCapacity,
                 Eval.EvalMetric.CompressionRate
         }) {
-            final SincConfig config = new SincConfig(
-                    1,
-                    false,
-                    false,
-                    5,
-                    true,
-                    eval_type,
-                    0.05,
-                    0.25,
-                    false,
-                    -1.0,
-                    false,
-                    false
-            );
+            for (double column_similarity : new double[]{0, 0.1}) {
+                final SincConfig config = new SincConfig(
+                        1,
+                        false,
+                        false,
+                        5,
+                        true,
+                        eval_type,
+                        0.05,
+                        0.25,
+                        column_similarity,
+                        1,
+                        false,
+                        -1.0,
+                        false,
+                        false
+                );
 
-            SincWithSpecificCache sinc = new SincWithSpecificCache(
-                    config,
-                    tmp_bk_file_path,
-                    null,
-                    null
-            );
-            sinc.run();
+                SincWithSpecificCache sinc = new SincWithSpecificCache(
+                        config,
+                        tmp_bk_file_path,
+                        null,
+                        null
+                );
+                sinc.run();
 
-            try {
-                Set<RuleFingerPrint> rule_set_sinc = new HashSet<>();
-                for (Rule r: sinc.getHypothesis()) {
-                    rule_set_sinc.add(r.getFingerPrint());
+                try {
+                    Set<RuleFingerPrint> rule_set_sinc = new HashSet<>();
+                    for (Rule r : sinc.getHypothesis()) {
+                        rule_set_sinc.add(r.getFingerPrint());
+                    }
+                    final Predicate head1 = new Predicate(
+                            FamilyRelationGenerator.OtherPredicate.GENDER.getName(),
+                            FamilyRelationGenerator.ARITY
+                    );
+                    head1.args[0] = new Variable(0);
+                    head1.args[1] = new Constant(
+                            CONSTANT_ID,
+                            FamilyRelationGenerator.Gender.MALE.getName()
+                    );
+                    final Predicate body1 = new Predicate(
+                            FamilyRelationGenerator.FamilyPredicate.FATHER.getName(),
+                            FamilyRelationGenerator.ARITY
+                    );
+                    body1.args[0] = new Variable(0);
+                    List<Predicate> r1 = new ArrayList<>(Arrays.asList(head1, body1));
+                    assertEquals("gender(X0,male):-father(X0,?)", rule2String(r1));
+
+                    final Predicate head2 = new Predicate(
+                            FamilyRelationGenerator.OtherPredicate.GENDER.getName(),
+                            FamilyRelationGenerator.ARITY
+                    );
+                    head2.args[0] = new Variable(0);
+                    head2.args[1] = new Constant(
+                            CONSTANT_ID,
+                            FamilyRelationGenerator.Gender.FEMALE.getName()
+                    );
+                    final Predicate body2 = new Predicate(
+                            FamilyRelationGenerator.FamilyPredicate.MOTHER.getName(),
+                            FamilyRelationGenerator.ARITY
+                    );
+                    body2.args[0] = new Variable(0);
+                    List<Predicate> r2 = new ArrayList<>(Arrays.asList(head2, body2));
+                    assertEquals("gender(X0,female):-mother(X0,?)", rule2String(r2));
+
+                    final Predicate head3 = new Predicate(
+                            FamilyRelationGenerator.FamilyPredicate.PARENT.getName(),
+                            FamilyRelationGenerator.ARITY
+                    );
+                    head3.args[0] = new Variable(0);
+                    head3.args[1] = new Variable(1);
+                    final Predicate body3 = new Predicate(
+                            FamilyRelationGenerator.FamilyPredicate.FATHER.getName(),
+                            FamilyRelationGenerator.ARITY
+                    );
+                    body3.args[0] = new Variable(0);
+                    body3.args[1] = new Variable(1);
+                    List<Predicate> r3 = new ArrayList<>(Arrays.asList(head3, body3));
+                    assertEquals("parent(X0,X1):-father(X0,X1)", rule2String(r3));
+
+                    final Predicate head4 = new Predicate(
+                            FamilyRelationGenerator.FamilyPredicate.PARENT.getName(),
+                            FamilyRelationGenerator.ARITY
+                    );
+                    head4.args[0] = new Variable(0);
+                    head4.args[1] = new Variable(1);
+                    final Predicate body4 = new Predicate(
+                            FamilyRelationGenerator.FamilyPredicate.MOTHER.getName(),
+                            FamilyRelationGenerator.ARITY
+                    );
+                    body4.args[0] = new Variable(0);
+                    body4.args[1] = new Variable(1);
+                    List<Predicate> r4 = new ArrayList<>(Arrays.asList(head4, body4));
+                    assertEquals("parent(X0,X1):-mother(X0,X1)", rule2String(r4));
+
+                    final Set<RuleFingerPrint> expected_rules = new HashSet<>();
+                    expected_rules.add(new RuleFingerPrint(r1));
+                    expected_rules.add(new RuleFingerPrint(r2));
+                    expected_rules.add(new RuleFingerPrint(r3));
+                    expected_rules.add(new RuleFingerPrint(r4));
+                    assertEquals(expected_rules, rule_set_sinc);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    fail();
                 }
-                final Predicate head1 = new Predicate(
-                        FamilyRelationGenerator.OtherPredicate.GENDER.getName(),
-                        FamilyRelationGenerator.ARITY
-                );
-                head1.args[0] = new Variable(0);
-                head1.args[1] = new Constant(
-                        CONSTANT_ID,
-                        FamilyRelationGenerator.Gender.MALE.getName()
-                );
-                final Predicate body1 = new Predicate(
-                        FamilyRelationGenerator.FamilyPredicate.FATHER.getName(),
-                        FamilyRelationGenerator.ARITY
-                );
-                body1.args[0] = new Variable(0);
-                List<Predicate> r1 = new ArrayList<>(Arrays.asList(head1, body1));
-                assertEquals("gender(X0,male):-father(X0,?)", rule2String(r1));
-
-                final Predicate head2 = new Predicate(
-                        FamilyRelationGenerator.OtherPredicate.GENDER.getName(),
-                        FamilyRelationGenerator.ARITY
-                );
-                head2.args[0] = new Variable(0);
-                head2.args[1] = new Constant(
-                        CONSTANT_ID,
-                        FamilyRelationGenerator.Gender.FEMALE.getName()
-                );
-                final Predicate body2 = new Predicate(
-                        FamilyRelationGenerator.FamilyPredicate.MOTHER.getName(),
-                        FamilyRelationGenerator.ARITY
-                );
-                body2.args[0] = new Variable(0);
-                List<Predicate> r2 = new ArrayList<>(Arrays.asList(head2, body2));
-                assertEquals("gender(X0,female):-mother(X0,?)", rule2String(r2));
-
-                final Predicate head3 = new Predicate(
-                        FamilyRelationGenerator.FamilyPredicate.PARENT.getName(),
-                        FamilyRelationGenerator.ARITY
-                );
-                head3.args[0] = new Variable(0);
-                head3.args[1] = new Variable(1);
-                final Predicate body3 = new Predicate(
-                        FamilyRelationGenerator.FamilyPredicate.FATHER.getName(),
-                        FamilyRelationGenerator.ARITY
-                );
-                body3.args[0] = new Variable(0);
-                body3.args[1] = new Variable(1);
-                List<Predicate> r3 = new ArrayList<>(Arrays.asList(head3, body3));
-                assertEquals("parent(X0,X1):-father(X0,X1)", rule2String(r3));
-
-                final Predicate head4 = new Predicate(
-                        FamilyRelationGenerator.FamilyPredicate.PARENT.getName(),
-                        FamilyRelationGenerator.ARITY
-                );
-                head4.args[0] = new Variable(0);
-                head4.args[1] = new Variable(1);
-                final Predicate body4 = new Predicate(
-                        FamilyRelationGenerator.FamilyPredicate.MOTHER.getName(),
-                        FamilyRelationGenerator.ARITY
-                );
-                body4.args[0] = new Variable(0);
-                body4.args[1] = new Variable(1);
-                List<Predicate> r4 = new ArrayList<>(Arrays.asList(head4, body4));
-                assertEquals("parent(X0,X1):-mother(X0,X1)", rule2String(r4));
-
-                final Set<RuleFingerPrint> expected_rules = new HashSet<>();
-                expected_rules.add(new RuleFingerPrint(r1));
-                expected_rules.add(new RuleFingerPrint(r2));
-                expected_rules.add(new RuleFingerPrint(r3));
-                expected_rules.add(new RuleFingerPrint(r4));
-                assertEquals(expected_rules, rule_set_sinc);
-            } catch (Exception e) {
-                e.printStackTrace();
-                fail();
             }
         }
 

@@ -19,6 +19,8 @@ public class SincWithSpecificCache extends CachedSinc {
                         config.evalMetric,
                         config.minFactCoverage,
                         config.minConstantCoverage,
+                        config.minColumnSimilarity,
+                        config.stopCompressionRate,
                         true,
                         -1.0,
                         false,

@@ -20,6 +20,8 @@ class Sinc4SymmetricTest {
                 Eval.EvalMetric.InfoGain,
                 0.05,
                 0.25,
+                0,
+                1,
                 false,
                 -1.0,
                 false,

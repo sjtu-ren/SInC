@@ -14,6 +14,8 @@ public class SincConfig {
     public final Eval.EvalMetric evalMetric;
     public final double minFactCoverage;
     public final double minConstantCoverage;
+    public final double minColumnSimilarity;
+    public final double stopCompressionRate;
 
     /* Optimization Config */
     public final boolean ruleCache;  // 如果开启ruleCache，那么searchOrigins被强制设置为false  // Todo: 这里可以把不同的Strategy做成enum
@@ -23,8 +25,8 @@ public class SincConfig {
 
     public SincConfig(
             int threads, boolean validation, boolean debug, int beamWidth, boolean searchOrigins,
-            Eval.EvalMetric evalMetric, double minFactCoverage, double minConstantCoverage,
-            boolean ruleCache, double sampling, boolean estimation, boolean kbBlocking
+            Eval.EvalMetric evalMetric, double minFactCoverage, double minConstantCoverage, double minColumnSimilarity,
+            double stopCompressionRate, boolean ruleCache, double sampling, boolean estimation, boolean kbBlocking
     ) {
         this.threads = threads;
         this.validation = validation;
@@ -34,6 +36,8 @@ public class SincConfig {
         this.evalMetric = evalMetric;
         this.minFactCoverage = minFactCoverage;
         this.minConstantCoverage = minConstantCoverage;
+        this.minColumnSimilarity = minColumnSimilarity;
+        this.stopCompressionRate = stopCompressionRate;
         this.ruleCache = ruleCache;
         this.sampling = sampling;
         this.estimation = estimation;

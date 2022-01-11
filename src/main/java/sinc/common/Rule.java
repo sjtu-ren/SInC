@@ -567,6 +567,21 @@ public abstract class Rule {
         return fingerPrint;
     }
 
+    public List<VarIndicator> getVarLocations(int varId) {
+        List<VarIndicator> result = new ArrayList<>();
+        if (varId < boundedVars.size()) {
+            for (Predicate predicate: structure) {
+                for (int arg_idx = 0; arg_idx < predicate.arity(); arg_idx++) {
+                    Argument argument = predicate.args[arg_idx];
+                    if (null != argument && argument.isVar && varId == argument.id) {
+                        result.add(new VarIndicator(predicate.functor, arg_idx));
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder("(");

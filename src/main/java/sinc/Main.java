@@ -11,6 +11,8 @@ public class Main {
     public static final int DEFAULT_BEAM_WIDTH = 3;
     public static final double DEFAULT_FACT_COVERAGE = 0.05;
     public static final double DEFAULT_CONSTANT_COVERAGE = 0.25;
+    public static final double DEFAULT_COLUMN_SIMILARITY = 0.1;
+    public static final double DEFAULT_STOP_COMPRESSION_RATE = 0.9;
     public static final Eval.EvalMetric DEFAULT_EVAL_METRIC = Eval.EvalMetric.CompressionCapacity;
     public static final Model DEFAULT_MODEL = Model.TABU;
 
@@ -18,6 +20,8 @@ public class Main {
     private static final String SHORT_OPT_VALIDATE = "v";
     private static final String SHORT_OPT_FACT_COVERAGE = "f";
     private static final String SHORT_OPT_CONSTANT_COVERAGE = "c";
+    private static final String SHORT_OPT_COLUMN_SIMILARITY = "s";
+    private static final String SHORT_OPT_STOP_COMPRESSION_RATE = "p";
     private static final String SHORT_OPT_RESULT_PATH = "r";
     private static final String SHORT_OPT_LOG_PATH = "l";
     private static final String SHORT_OPT_HELP = "h";
@@ -29,6 +33,8 @@ public class Main {
     private static final String LONG_OPT_VALIDATE = "validate";
     private static final String LONG_OPT_FACT_COVERAGE = "fact-coverage";
     private static final String LONG_OPT_CONSTANT_COVERAGE = "const-coverage";
+    private static final String LONG_OPT_COLUMN_SIMILARITY = "column-similarity";
+    private static final String LONG_OPT_STOP_COMPRESSION_RATE = "stop-comp-rate";
     private static final String LONG_OPT_RESULT_PATH = "result-path";
     private static final String LONG_OPT_LOG_PATH = "log-path";
     private static final String LONG_OPT_HELP = "help";
@@ -38,13 +44,17 @@ public class Main {
     private static final String LONG_OPT_MODEL = "model";
 
     private static final Option OPTION_BEAM_WIDTH = Option.builder(SHORT_OPT_BEAM_WIDTH).longOpt(LONG_OPT_BEAM_WIDTH)
-            .desc("Bean search width (Default 3)").argName("b").hasArg().type(Integer.class).build();
+            .desc(String.format("Bean search width (Default %d)", DEFAULT_BEAM_WIDTH)).argName("b").hasArg().type(Integer.class).build();
     private static final Option OPTION_VALIDATE = Option.builder(SHORT_OPT_VALIDATE).longOpt(LONG_OPT_VALIDATE)
             .desc("Validate result after compression").build();
     private static final Option OPTION_FACT_COVERAGE = Option.builder(SHORT_OPT_FACT_COVERAGE).longOpt(LONG_OPT_FACT_COVERAGE)
-            .desc("Set fact coverage threshold (Default 0.05)").argName("fc").hasArg().type(Double.class).build();
+            .desc(String.format("Set fact coverage threshold (Default %f)", DEFAULT_FACT_COVERAGE)).argName("fc").hasArg().type(Double.class).build();
     private static final Option OPTION_CONSTANT_COVERAGE = Option.builder(SHORT_OPT_CONSTANT_COVERAGE).longOpt(LONG_OPT_CONSTANT_COVERAGE)
-            .desc("Set constant coverage threshold (Default 0.25)").argName("cc").hasArg().type(Double.class).build();
+            .desc(String.format("Set constant coverage threshold (Default %f)", DEFAULT_CONSTANT_COVERAGE)).argName("cc").hasArg().type(Double.class).build();
+    private static final Option OPTION_COLUMN_SIMILARITY = Option.builder(SHORT_OPT_COLUMN_SIMILARITY).longOpt(LONG_OPT_COLUMN_SIMILARITY)
+            .desc(String.format("Set column similarity threshold (Default %f)", DEFAULT_COLUMN_SIMILARITY)).argName("cs").hasArg().type(Double.class).build();
+    private static final Option OPTION_STOP_COMPRESSION_RATE = Option.builder(SHORT_OPT_STOP_COMPRESSION_RATE).longOpt(LONG_OPT_STOP_COMPRESSION_RATE)
+            .desc(String.format("Set stopping compression rate (Default %f)", DEFAULT_STOP_COMPRESSION_RATE)).argName("scr").hasArg().type(Double.class).build();
     private static final Option OPTION_RESULT_PATH = Option.builder(SHORT_OPT_RESULT_PATH).longOpt(LONG_OPT_RESULT_PATH)
             .desc("Path to where the result is dumped (StdOut if not appointed)").argName("path").hasArg().type(String.class).build();
     private static final Option OPTION_LOG_PATH = Option.builder(SHORT_OPT_LOG_PATH).longOpt(LONG_OPT_LOG_PATH)
@@ -162,6 +172,26 @@ public class Main {
             }
         }
 
+        /* Assign CS Threshold (s) */
+        double cs = DEFAULT_COLUMN_SIMILARITY;
+        if (cmd.hasOption(OPTION_COLUMN_SIMILARITY)) {
+            String value = cmd.getOptionValue(OPTION_COLUMN_SIMILARITY);
+            if (null != value) {
+                cs = Double.parseDouble(value);
+                System.out.println("Column similarity set to: " + cs);
+            }
+        }
+
+        /* Assign CS Threshold (s) */
+        double scr = DEFAULT_STOP_COMPRESSION_RATE;
+        if (cmd.hasOption(OPTION_STOP_COMPRESSION_RATE)) {
+            String value = cmd.getOptionValue(OPTION_STOP_COMPRESSION_RATE);
+            if (null != value) {
+                scr = Double.parseDouble(value);
+                System.out.println("Stopping compression rate set to: " + scr);
+            }
+        }
+
         /* Select Dataset */
         String data_path = null;
         if (cmd.hasOption(SHORT_OPT_DATA_PATH)) {
@@ -208,7 +238,7 @@ public class Main {
         }
 
         SincConfig config = new SincConfig(
-                1, validation, false, beam, false, metric, fc, cc, true,
+                1, validation, false, beam, false, metric, fc, cc, cs, scr, true,
                 -1.0, false, false
         );
         return Model.getModel(model.getName(), config, data_path, result_path, log_path);
@@ -234,6 +264,12 @@ public class Main {
 
         /* CC Threshold Assignment (c) */
         options.addOption(OPTION_CONSTANT_COVERAGE);
+
+        /* CS Threshold Assignment (s) */
+        options.addOption(OPTION_COLUMN_SIMILARITY);
+
+        /* CS Threshold Assignment (p) */
+        options.addOption(OPTION_STOP_COMPRESSION_RATE);
 
         /* Dataset Selection (d, D) */
         options.addOptionGroup(OPT_GRP_DATA);
