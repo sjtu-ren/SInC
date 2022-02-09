@@ -40,7 +40,7 @@ public class PerformanceMonitor {
     /* Time Monitor */
     public long kbLoadTime = 0;
     public long hypothesisMiningTime = 0;
-    public long otherMiningTime = 0;  // Counter Examples + Start Set(Dependency Graph)
+    public long dependencyAnalysisTime = 0;  // Counter Examples + Necessaries(Dependency Graph)
     public long validationTime = 0;
     public long dumpTime = 0;
     public long totalTime = 0;
@@ -73,11 +73,11 @@ public class PerformanceMonitor {
         writer.println("--- Time Cost ---");
         writer.printf(
                 "(ms) %10s %10s %10s %10s %10s %10s\n",
-                "Load", "Hypo", "N&A", "Validate", "Dump", "Total"
+                "Load", "Hypo", "Dep", "Validate", "Dump", "Total"
         );
         writer.printf(
                 "     %10d %10d %10d %10d %10d %10d\n\n",
-                kbLoadTime, hypothesisMiningTime, otherMiningTime, validationTime, dumpTime, totalTime
+                kbLoadTime, hypothesisMiningTime, dependencyAnalysisTime, validationTime, dumpTime, totalTime
         );
 
         writer.println("--- Statistics ---");

@@ -49,6 +49,7 @@ public abstract class SInC {
         }
         this.logger = writer;
         Rule.MIN_FACT_COVERAGE = config.minFactCoverage;
+        Rule.monitor = new RuleMonitor();
     }
 
     /**
@@ -442,6 +443,7 @@ public abstract class SInC {
 
     protected void showMonitor() {
         performanceMonitor.show(logger);
+        Rule.monitor.show(logger);
         logger.flush();
     }
 
@@ -538,7 +540,7 @@ public abstract class SInC {
                     counterExamples.addAll(update_result.counterExamples);
                     updateGraph(update_result.groundings);
                     final long time_kb_updated = System.currentTimeMillis();
-                    performanceMonitor.otherMiningTime += time_kb_updated - time_rule_found;
+                    performanceMonitor.dependencyAnalysisTime += time_kb_updated - time_rule_found;
                 } else {
                     target_head_functors.remove(last_idx);
                     logger.printf("Target Done: %d/%d\n", total_targets - target_head_functors.size(), total_targets);
@@ -559,7 +561,7 @@ public abstract class SInC {
             findSupplementaryConstants();
             performanceMonitor.supplementaryConstants = supplementaryConstants.size();
             final long time_start_set_found = System.currentTimeMillis();
-            performanceMonitor.otherMiningTime += time_start_set_found - time_graph_analyse_begin;
+            performanceMonitor.dependencyAnalysisTime += time_start_set_found - time_graph_analyse_begin;
 
             /* 打印所有rules */
             logger.println("\n### Hypothesis Found ###");
@@ -581,7 +583,7 @@ public abstract class SInC {
                 }
             }
             final long time_validation_done = System.currentTimeMillis();
-            performanceMonitor.validationTime = time_validation_done - time_start_set_found;
+            performanceMonitor.validationTime = time_validation_done - time_dumped;
 
             showMonitor();
 
@@ -604,10 +606,10 @@ public abstract class SInC {
             performanceMonitor.sccVertices = graph_analyse_result.sccVertices;
             performanceMonitor.fvsVertices = graph_analyse_result.fvsVertices;
             final long time_start_set_found = System.currentTimeMillis();
-            performanceMonitor.otherMiningTime += time_start_set_found - time_graph_analyse_begin;
+            performanceMonitor.dependencyAnalysisTime += time_start_set_found - time_graph_analyse_begin;
 
             /* 打印所有rules */
-            logger.println("\n### Hypothesis Found ###");
+            logger.println("\n### Hypothesis Found (Interrupted) ###");
             for (Rule rule : hypothesis) {
                 logger.println(rule);
             }
@@ -626,8 +628,23 @@ public abstract class SInC {
             e.printStackTrace();
             System.err.flush();
 
+            /* 从结束 Rule Finding 开始 */
+            performanceMonitor.hypothesisRuleNumber = hypothesis.size();
+            performanceMonitor.counterExampleSize = counterExamples.size();
+
+            /* 解析Graph找start set */
+            final long time_graph_analyse_begin = System.currentTimeMillis();
+            GraphAnalyseResult graph_analyse_result = findStartSet();
+            performanceMonitor.startSetSize = graph_analyse_result.startSetSize;
+            performanceMonitor.startSetSizeWithoutFvs = graph_analyse_result.startSetSizeWithoutFvs;
+            performanceMonitor.sccNumber = graph_analyse_result.sccNumber;
+            performanceMonitor.sccVertices = graph_analyse_result.sccVertices;
+            performanceMonitor.fvsVertices = graph_analyse_result.fvsVertices;
+            final long time_start_set_found = System.currentTimeMillis();
+            performanceMonitor.dependencyAnalysisTime += time_start_set_found - time_graph_analyse_begin;
+
             /* 打印当前已经得到的rules */
-            logger.println("\n### Hypothesis Found (Current) ###");
+            logger.println("\n### Hypothesis Found (Before Error) ###");
             for (Rule rule : hypothesis) {
                 logger.println(rule);
             }

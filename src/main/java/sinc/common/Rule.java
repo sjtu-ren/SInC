@@ -10,6 +10,7 @@ public abstract class Rule {
     public static final int CONSTANT_ARG_ID = -1;
 
     public static double MIN_FACT_COVERAGE = 0.0;
+    public static RuleMonitor monitor = new RuleMonitor();
 
     public enum UpdateStatus {
         NORMAL, DUPLICATED, INVALID, INSUFFICIENT_COVERAGE, TABU_PRUNED
@@ -208,26 +209,39 @@ public abstract class Rule {
             final int predIdx, final int argIdx, final int varId
     ) {
         /* 改变Rule结构 */
+        long time_start_nano = System.nanoTime();
         fingerPrint = boundFreeVar2ExistingVarUpdateStructure(predIdx, argIdx, varId);
+        long time_fp_updated_nano = System.nanoTime();
+        monitor.updateFingerPrintTimeNano += time_fp_updated_nano - time_start_nano;
 
         /* 检查是否命中Cache */
-        if (!searchedFingerprints.add(fingerPrint)) {
+        boolean cache_hit = !searchedFingerprints.add(fingerPrint);
+        long time_cache_checked_nano = System.nanoTime();
+        monitor.dupCheckTimeNano += time_cache_checked_nano - time_fp_updated_nano;
+        if (cache_hit) {
             return UpdateStatus.DUPLICATED;
         }
 
         /* 检查合法性 */
-        if (isInvalid()) {
+        boolean invalid = isInvalid();
+        long time_valid_checked_nano = System.nanoTime();
+        monitor.validCheckTimeNano += time_valid_checked_nano - time_cache_checked_nano;
+        if (invalid) {
             return UpdateStatus.INVALID;
         }
 
         /* 执行handler */
         final UpdateStatus status = boundFreeVar2ExistingVarHandler(predIdx, argIdx, varId);
+        long time_updated_nano = System.nanoTime();
+        monitor.updateHandlerTimeNano += time_updated_nano - time_valid_checked_nano;
         if (UpdateStatus.NORMAL != status) {
             return status;
         }
 
         /* 更新Eval */
         this.eval = calculateEval();
+        long time_evaluated_nano = System.nanoTime();
+        monitor.evalTimeNano += time_evaluated_nano - time_updated_nano;
         return UpdateStatus.NORMAL;
     }
 
@@ -259,26 +273,39 @@ public abstract class Rule {
             final String functor, final int arity, final int argIdx, final int varId
     ) {
         /* 改变Rule结构 */
+        long time_start_nano = System.nanoTime();
         fingerPrint = boundFreeVar2ExistingVarUpdateStructure(functor, arity, argIdx, varId);
+        long time_fp_updated_nano = System.nanoTime();
+        monitor.updateFingerPrintTimeNano += time_fp_updated_nano - time_start_nano;
 
         /* 检查是否命中Cache */
-        if (!searchedFingerprints.add(fingerPrint)) {
+        boolean cache_hit = !searchedFingerprints.add(fingerPrint);
+        long time_cache_checked_nano = System.nanoTime();
+        monitor.dupCheckTimeNano += time_cache_checked_nano - time_fp_updated_nano;
+        if (cache_hit) {
             return UpdateStatus.DUPLICATED;
         }
 
         /* 检查合法性 */
-        if (isInvalid()) {
+        boolean invalid = isInvalid();
+        long time_valid_checked_nano = System.nanoTime();
+        monitor.validCheckTimeNano += time_valid_checked_nano - time_cache_checked_nano;
+        if (invalid) {
             return UpdateStatus.INVALID;
         }
 
         /* 执行handler */
         final UpdateStatus status = boundFreeVar2ExistingVarHandler(structure.get(structure.size() - 1), argIdx, varId);
+        long time_updated_nano = System.nanoTime();
+        monitor.updateHandlerTimeNano += time_updated_nano - time_valid_checked_nano;
         if (UpdateStatus.NORMAL != status) {
             return status;
         }
 
         /* 更新Eval */
         this.eval = calculateEval();
+        long time_evaluated_nano = System.nanoTime();
+        monitor.evalTimeNano += time_evaluated_nano - time_updated_nano;
         return UpdateStatus.NORMAL;
     }
 
@@ -311,26 +338,39 @@ public abstract class Rule {
             final int predIdx1, final int argIdx1, final int predIdx2, final int argIdx2
     ) {
         /* 改变Rule结构 */
+        long time_start_nano = System.nanoTime();
         fingerPrint = boundFreeVars2NewVarUpdateStructure(predIdx1, argIdx1, predIdx2, argIdx2);
+        long time_fp_updated_nano = System.nanoTime();
+        monitor.updateFingerPrintTimeNano += time_fp_updated_nano - time_start_nano;
 
         /* 检查是否命中Cache */
-        if (!searchedFingerprints.add(fingerPrint)) {
+        boolean cache_hit = !searchedFingerprints.add(fingerPrint);
+        long time_cache_checked_nano = System.nanoTime();
+        monitor.dupCheckTimeNano += time_cache_checked_nano - time_fp_updated_nano;
+        if (cache_hit) {
             return UpdateStatus.DUPLICATED;
         }
 
         /* 检查合法性 */
-        if (isInvalid()) {
+        boolean invalid = isInvalid();
+        long time_valid_checked_nano = System.nanoTime();
+        monitor.validCheckTimeNano += time_valid_checked_nano - time_cache_checked_nano;
+        if (invalid) {
             return UpdateStatus.INVALID;
         }
 
         /* 执行handler */
         final UpdateStatus status = boundFreeVars2NewVarHandler(predIdx1, argIdx1, predIdx2, argIdx2);
+        long time_updated_nano = System.nanoTime();
+        monitor.updateHandlerTimeNano += time_updated_nano - time_valid_checked_nano;
         if (UpdateStatus.NORMAL != status) {
             return status;
         }
 
         /* 更新Eval */
         this.eval = calculateEval();
+        long time_evaluated_nano = System.nanoTime();
+        monitor.evalTimeNano += time_evaluated_nano - time_updated_nano;
         return UpdateStatus.NORMAL;
     }
 
@@ -366,15 +406,24 @@ public abstract class Rule {
             final String functor, final int arity, final int argIdx1, final int predIdx2, final int argIdx2
     ) {
         /* 改变Rule结构 */
+        long time_start_nano = System.nanoTime();
         fingerPrint = boundFreeVars2NewVarUpdateStructure(functor, arity, argIdx1, predIdx2, argIdx2);
+        long time_fp_updated_nano = System.nanoTime();
+        monitor.updateFingerPrintTimeNano += time_fp_updated_nano - time_start_nano;
 
         /* 检查是否命中Cache */
-        if (!searchedFingerprints.add(fingerPrint)) {
+        boolean cache_hit = !searchedFingerprints.add(fingerPrint);
+        long time_cache_checked_nano = System.nanoTime();
+        monitor.dupCheckTimeNano += time_cache_checked_nano - time_fp_updated_nano;
+        if (cache_hit) {
             return UpdateStatus.DUPLICATED;
         }
 
         /* 检查合法性 */
-        if (isInvalid()) {
+        boolean invalid = isInvalid();
+        long time_valid_checked_nano = System.nanoTime();
+        monitor.validCheckTimeNano += time_valid_checked_nano - time_cache_checked_nano;
+        if (invalid) {
             return UpdateStatus.INVALID;
         }
 
@@ -382,12 +431,16 @@ public abstract class Rule {
         final UpdateStatus status = boundFreeVars2NewVarHandler(
                 structure.get(structure.size() - 1), argIdx1, predIdx2, argIdx2
         );
+        long time_updated_nano = System.nanoTime();
+        monitor.updateHandlerTimeNano += time_updated_nano - time_valid_checked_nano;
         if (UpdateStatus.NORMAL != status) {
             return status;
         }
 
         /* 更新Eval */
         this.eval = calculateEval();
+        long time_evaluated_nano = System.nanoTime();
+        monitor.evalTimeNano += time_evaluated_nano - time_updated_nano;
         return UpdateStatus.NORMAL;
     }
 
@@ -422,26 +475,39 @@ public abstract class Rule {
      */
     public UpdateStatus boundFreeVar2Constant(final int predIdx, final int argIdx, final String constantSymbol) {
         /* 改变Rule结构 */
+        long time_start_nano = System.nanoTime();
         fingerPrint = boundFreeVar2ConstantUpdateStructure(predIdx, argIdx, constantSymbol);
+        long time_fp_updated_nano = System.nanoTime();
+        monitor.updateFingerPrintTimeNano += time_fp_updated_nano - time_start_nano;
 
         /* 检查是否命中Cache */
-        if (!searchedFingerprints.add(fingerPrint)) {
+        boolean cache_hit = !searchedFingerprints.add(fingerPrint);
+        long time_cache_checked_nano = System.nanoTime();
+        monitor.dupCheckTimeNano += time_cache_checked_nano - time_fp_updated_nano;
+        if (cache_hit) {
             return UpdateStatus.DUPLICATED;
         }
 
         /* 检查合法性 */
-        if (isInvalid()) {
+        boolean invalid = isInvalid();
+        long time_valid_checked_nano = System.nanoTime();
+        monitor.validCheckTimeNano += time_valid_checked_nano - time_cache_checked_nano;
+        if (invalid) {
             return UpdateStatus.INVALID;
         }
 
         /* 执行handler */
         final UpdateStatus status = boundFreeVar2ConstantHandler(predIdx, argIdx, constantSymbol);
+        long time_updated_nano = System.nanoTime();
+        monitor.updateHandlerTimeNano += time_updated_nano - time_valid_checked_nano;
         if (UpdateStatus.NORMAL != status) {
             return status;
         }
 
         /* 更新Eval */
         this.eval = calculateEval();
+        long time_evaluated_nano = System.nanoTime();
+        monitor.evalTimeNano += time_evaluated_nano - time_updated_nano;
         return UpdateStatus.NORMAL;
     }
 
@@ -462,26 +528,39 @@ public abstract class Rule {
     }
 
     public UpdateStatus removeBoundedArg(final int predIdx, final int argIdx) {
+        long time_start_nano = System.nanoTime();
         fingerPrint = removeBoundedArgUpdateStructure(predIdx, argIdx);
+        long time_fp_updated_nano = System.nanoTime();
+        monitor.updateFingerPrintTimeNano += time_fp_updated_nano - time_start_nano;
 
         /* 检查是否命中Cache */
-        if (!searchedFingerprints.add(fingerPrint)) {
+        boolean cache_hit = !searchedFingerprints.add(fingerPrint);
+        long time_cache_checked_nano = System.nanoTime();
+        monitor.dupCheckTimeNano += time_cache_checked_nano - time_fp_updated_nano;
+        if (cache_hit) {
             return UpdateStatus.DUPLICATED;
         }
 
         /* 检查合法性 */
-        if (isInvalid()) {
+        boolean invalid = isInvalid();
+        long time_valid_checked_nano = System.nanoTime();
+        monitor.validCheckTimeNano += time_valid_checked_nano - time_cache_checked_nano;
+        if (invalid) {
             return UpdateStatus.INVALID;
         }
 
         /* 执行handler */
         final UpdateStatus status = removeBoundedArgHandler(predIdx, argIdx);
+        long time_updated_nano = System.nanoTime();
+        monitor.updateHandlerTimeNano += time_updated_nano - time_valid_checked_nano;
         if (UpdateStatus.NORMAL != status) {
             return status;
         }
 
         /* 更新Eval */
         this.eval = calculateEval();
+        long time_evaluated_nano = System.nanoTime();
+        monitor.evalTimeNano += time_evaluated_nano - time_updated_nano;
         return UpdateStatus.NORMAL;
     }
 
