@@ -67,6 +67,8 @@ public abstract class SInC {
     protected Rule findRule(String headFunctor) throws InterruptedSignal {
         final Set<RuleFingerPrint> cache = new HashSet<>();
         final Rule start_rule = getStartRule(headFunctor, cache);
+        final List<Rule> extensions = new ArrayList<>(); //branch的个数可以在循环中增加一个整数来记录
+        final List<Rule> origins = new ArrayList<>();
 
         /* 初始化beams */
         final Eval.EvalMetric eval_metric = config.evalMetric;
@@ -89,30 +91,9 @@ public abstract class SInC {
                 Rule r_max = r;
 
                 /* 遍历r的邻居 */
-                final List<Rule> extensions = findExtension(r);
-                final List<Rule> origins;
+                r_max = findExtension(r, candidates);
                 if (config.searchOrigins) {
-                    origins = findOrigin(r);
-                } else {
-                    origins = new ArrayList<>();
-                }
-                for (Rule r_e : extensions) {
-                    if (r_e.getEval().value(eval_metric) > r.getEval().value(eval_metric)) {
-                        candidates.add(r_e);
-                        if (r_e.getEval().value(eval_metric) > r_max.getEval().value(eval_metric)) {
-                            r_max = r_e;
-                        }
-                    }
-                }
-                if (config.searchOrigins) {
-                    for (Rule r_o : origins) {
-                        if (r_o.getEval().value(eval_metric) > r.getEval().value(eval_metric)) {
-                            candidates.add(r_o);
-                            if (r_o.getEval().value(eval_metric) > r_max.getEval().value(eval_metric)) {
-                                r_max = r_o;
-                            }
-                        }
-                    }
+                    r_max = findOrigin(r, candidates);
                 }
 
                 if (r_max == r) {
@@ -149,13 +130,14 @@ public abstract class SInC {
         }
     }
 
-    protected List<Rule> findExtension(final Rule rule) throws InterruptedSignal {
-        List<Rule> extensions = new ArrayList<>();
+    protected Rule findExtension(final Rule rule, PriorityQueue<Rule> candidates) throws InterruptedSignal {
+        Rule r_max = rule;
+        final Eval.EvalMetric eval_metric = config.evalMetric;
 
         Eval eval = rule.getEval();
         if (config.stopCompressionRate <= eval.value(Eval.EvalMetric.CompressionRate) || 0 == eval.getNegCnt()) {
             /* 如果到达停止阈值，不再进行extension */
-            return extensions;
+            return r_max;
         }
 
         /* 先找到所有空白的参数 */
@@ -190,7 +172,13 @@ public abstract class SInC {
                         final Rule.UpdateStatus update_status = new_rule.boundFreeVar2ExistingVar(
                                 vacant.predIdx, vacant.argIdx, var_id
                         );
-                        checkThenAddRule(extensions, update_status, new_rule);
+                        checkRule(update_status, new_rule);
+                        if (new_rule.getEval().value(eval_metric) > rule.getEval().value(eval_metric)) {
+                            candidates.add(new_rule);
+                            if (new_rule.getEval().value(eval_metric) > r_max.getEval().value(eval_metric)) {
+                                r_max = new_rule;
+                            }
+                        }
                         break;
                     }
                 }
@@ -207,8 +195,13 @@ public abstract class SInC {
                             final Rule.UpdateStatus update_status = new_rule.boundFreeVar2ExistingVar(
                                     functor, arity, arg_idx, var_id
                             );
-                            checkThenAddRule(extensions, update_status, new_rule);
-                            break;
+                            checkRule(update_status, new_rule);
+                            if (new_rule.getEval().value(eval_metric) > rule.getEval().value(eval_metric)) {
+                                candidates.add(new_rule);
+                                if (new_rule.getEval().value(eval_metric) > r_max.getEval().value(eval_metric)) {
+                                    r_max = new_rule;
+                                }
+                            }
                         }
                     }
                 }
@@ -229,7 +222,13 @@ public abstract class SInC {
                 final Rule.UpdateStatus update_status = new_rule.boundFreeVar2Constant(
                         first_vacant.predIdx, first_vacant.argIdx, const_symbol
                 );
-                checkThenAddRule(extensions, update_status, new_rule);
+                checkRule(update_status, new_rule);
+                if (new_rule.getEval().value(eval_metric) > rule.getEval().value(eval_metric)) {
+                    candidates.add(new_rule);
+                    if (new_rule.getEval().value(eval_metric) > r_max.getEval().value(eval_metric)) {
+                        r_max = new_rule;
+                    }
+                }
             }
 
             /* 找到两个位置尝试同一个新变量 */
@@ -241,7 +240,13 @@ public abstract class SInC {
                     final Rule.UpdateStatus update_status = new_rule.boundFreeVars2NewVar(
                             first_vacant.predIdx, first_vacant.argIdx, second_vacant.predIdx, second_vacant.argIdx
                     );
-                    checkThenAddRule(extensions, update_status, new_rule);
+                    checkRule(update_status, new_rule);
+                    if (new_rule.getEval().value(eval_metric) > rule.getEval().value(eval_metric)) {
+                        candidates.add(new_rule);
+                        if (new_rule.getEval().value(eval_metric) > r_max.getEval().value(eval_metric)) {
+                            r_max = new_rule;
+                        }
+                    }
                 }
             }
             for (Map.Entry<String, Integer> entry: func_2_arity_map.entrySet()) {
@@ -254,21 +259,29 @@ public abstract class SInC {
                         final Rule.UpdateStatus update_status = new_rule.boundFreeVars2NewVar(
                                 functor, arity, arg_idx, first_vacant.predIdx, first_vacant.argIdx
                         );
-                        checkThenAddRule(extensions, update_status, new_rule);
+                        checkRule(update_status, new_rule);
+                        if (new_rule.getEval().value(eval_metric) > rule.getEval().value(eval_metric)) {
+                            candidates.add(new_rule);
+                            if (new_rule.getEval().value(eval_metric) > r_max.getEval().value(eval_metric)) {
+                                r_max = new_rule;
+                            }
+                        }
                     }
                 }
             }
         }
 
-        return extensions;
+        return r_max;
     }
 
     abstract protected Map<String, Integer> getFunctor2ArityMap();
 
     abstract protected Map<String, List<String>[]> getFunctor2PromisingConstantMap();
 
-    protected List<Rule> findOrigin(Rule rule) throws InterruptedSignal {
-        final List<Rule> origins = new ArrayList<>();
+    protected Rule findOrigin(Rule rule, PriorityQueue<Rule> candidates) throws InterruptedSignal {
+        Rule r_max = rule;
+        final Eval.EvalMetric eval_metric = config.evalMetric;
+
         for (int pred_idx = Rule.HEAD_PRED_IDX; pred_idx < rule.length(); pred_idx++) {
             /* 从Head开始删除可能会出现Head中没有Bounded Var但是Body不为空的情况，按照定义来说，这种规则是不在
                搜索空间中的，但是会被isInvalid方法检查出来 */
@@ -277,12 +290,18 @@ public abstract class SInC {
                 if (null != predicate.args[arg_idx]) {
                     final Rule new_rule = rule.clone();
                     final Rule.UpdateStatus update_status = new_rule.removeBoundedArg(pred_idx, arg_idx);
-                    checkThenAddRule(origins, update_status, new_rule);
+                    checkRule(update_status, new_rule);
+                    if (new_rule.getEval().value(eval_metric) > rule.getEval().value(eval_metric)) {
+                        candidates.add(new_rule);
+                        if (new_rule.getEval().value(eval_metric) > r_max.getEval().value(eval_metric)) {
+                            r_max = new_rule;
+                        }
+                    }
                 }
             }
         }
 
-        return origins;
+        return r_max;
     }
 
     abstract protected UpdateResult updateKb(Rule rule);
@@ -474,6 +493,32 @@ public abstract class SInC {
         switch (updateStatus) {
             case NORMAL:
                 collection.add(rule);
+                break;
+            case INVALID:
+                performanceMonitor.invalidSearches++;
+                break;
+            case DUPLICATED:
+                performanceMonitor.duplications++;
+                break;
+            case INSUFFICIENT_COVERAGE:
+                performanceMonitor.fcFilteredRules++;
+                break;
+            case TABU_PRUNED:
+                performanceMonitor.tabuPruned++;
+                break;
+            default:
+                throw new Error("Unknown Update Status of Rule: " + updateStatus.name());
+        }
+        recordRuleStatus(rule, updateStatus);
+        if (interrupted) {
+            throw new InterruptedSignal("Interrupted");
+        }
+    }
+
+    protected void checkRule(Rule.UpdateStatus updateStatus, Rule rule)
+            throws InterruptedSignal {
+        switch (updateStatus) {
+            case NORMAL:
                 break;
             case INVALID:
                 performanceMonitor.invalidSearches++;
