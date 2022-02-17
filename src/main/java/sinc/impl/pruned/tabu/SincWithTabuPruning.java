@@ -41,7 +41,6 @@ public class SincWithTabuPruning extends SincWithRecalculateCache {
     @Override
     protected void recordRuleStatus(Rule rule, Rule.UpdateStatus updateStatus) {
         super.recordRuleStatus(rule, updateStatus);
-        TabuAwareRule tabu_rule = (TabuAwareRule) rule;
         if (updateStatus == Rule.UpdateStatus.INSUFFICIENT_COVERAGE) {
             final MultiSet<String> functor_mset = new MultiSet<>();
             for (int pred_idx = Rule.FIRST_BODY_PRED_IDX; pred_idx < rule.length(); pred_idx++) {

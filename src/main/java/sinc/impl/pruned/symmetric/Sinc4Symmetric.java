@@ -18,14 +18,17 @@ public class Sinc4Symmetric extends SincWithTabuPruning {
     }
 
     @Override
-    protected Rule findExtension(Rule rule, PriorityQueue<Rule> candidates) throws InterruptedSignal {
-        Rule r_max = rule;
-        final Eval.EvalMetric eval_metric = config.evalMetric;
+    protected void findExtension(Rule rule, PriorityQueue<Rule> candidates) throws InterruptedSignal {
+        Eval eval = rule.getEval();
+        if (config.stopCompressionRate <= eval.value(Eval.EvalMetric.CompressionRate) || 0 == eval.getNegCnt()) {
+            /* 如果到达停止阈值，不再进行extension */
+            return;
+        }
 
         /* 只考虑将rule扩展成为可能的对称规则 */
         final Predicate head_pred = rule.getHead();
         if (2 <= rule.size() || 2 != head_pred.arity()) {
-            return r_max;
+            return;
         }
 
         if (0 == rule.size()) {
@@ -42,49 +45,25 @@ public class Sinc4Symmetric extends SincWithTabuPruning {
                 final Rule.UpdateStatus update_status1 = new_rule1.boundFreeVars2NewVar(
                         functor, arity, 0, 0, 0
                 );
-                checkRule(update_status1, new_rule1);
-                if (new_rule1.getEval().value(eval_metric) > rule.getEval().value(eval_metric)) {
-                    candidates.add(new_rule1);
-                    if (new_rule1.getEval().value(eval_metric) > r_max.getEval().value(eval_metric)) {
-                        r_max = new_rule1;
-                    }
-                }
+                checkThenAddRule(update_status1, new_rule1, rule, candidates);
 
                 final Rule new_rule2 = rule.clone();
                 final Rule.UpdateStatus update_status2 = new_rule2.boundFreeVars2NewVar(
                         functor, arity, 1, 0, 0
                 );
-                checkRule(update_status2, new_rule2);
-                if (new_rule2.getEval().value(eval_metric) > rule.getEval().value(eval_metric)) {
-                    candidates.add(new_rule2);
-                    if (new_rule2.getEval().value(eval_metric) > r_max.getEval().value(eval_metric)) {
-                        r_max = new_rule2;
-                    }
-                }
+                checkThenAddRule(update_status2, new_rule2, rule, candidates);
 
                 final Rule new_rule3 = rule.clone();
                 final Rule.UpdateStatus update_status3 = new_rule3.boundFreeVars2NewVar(
                         functor, arity, 0, 0, 1
                 );
-                checkRule(update_status3, new_rule3);
-                if (new_rule3.getEval().value(eval_metric) > rule.getEval().value(eval_metric)) {
-                    candidates.add(new_rule3);
-                    if (new_rule3.getEval().value(eval_metric) > r_max.getEval().value(eval_metric)) {
-                        r_max = new_rule3;
-                    }
-                }
+                checkThenAddRule(update_status3, new_rule3, rule, candidates);
 
                 final Rule new_rule4 = rule.clone();
                 final Rule.UpdateStatus update_status4 = new_rule4.boundFreeVars2NewVar(
                         functor, arity, 1, 0, 1
                 );
-                checkRule(update_status4, new_rule4);
-                if (new_rule4.getEval().value(eval_metric) > rule.getEval().value(eval_metric)) {
-                    candidates.add(new_rule4);
-                    if (new_rule4.getEval().value(eval_metric) > r_max.getEval().value(eval_metric)) {
-                        r_max = new_rule4;
-                    }
-                }
+                checkThenAddRule(update_status4, new_rule4, rule, candidates);
             }
         } else {
             /* |r| = 1 */
@@ -114,17 +93,9 @@ public class Sinc4Symmetric extends SincWithTabuPruning {
                 final Rule.UpdateStatus update_status = new_rule.boundFreeVars2NewVar(
                         uv_poss[0].predIdx, uv_poss[0].argIdx, uv_poss[1].predIdx, uv_poss[1].argIdx
                 );
-                checkRule(update_status, new_rule);
-                if (new_rule.getEval().value(eval_metric) > rule.getEval().value(eval_metric)) {
-                    candidates.add(new_rule);
-                    if (new_rule.getEval().value(eval_metric) > r_max.getEval().value(eval_metric)) {
-                        r_max = new_rule;
-                    }
-                }
+                checkThenAddRule(update_status, new_rule, rule, candidates);
             }
         }
-
-        return r_max;
     }
 
     @Override

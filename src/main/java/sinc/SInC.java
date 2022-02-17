@@ -67,8 +67,6 @@ public abstract class SInC {
     protected Rule findRule(String headFunctor) throws InterruptedSignal {
         final Set<RuleFingerPrint> cache = new HashSet<>();
         final Rule start_rule = getStartRule(headFunctor, cache);
-        final List<Rule> extensions = new ArrayList<>(); //branch的个数可以在循环中增加一个整数来记录
-        final List<Rule> origins = new ArrayList<>();
 
         /* 初始化beams */
         final Eval.EvalMetric eval_metric = config.evalMetric;
@@ -88,21 +86,24 @@ public abstract class SInC {
             for (Rule r: beams) {
                 logger.printf("Extend: %s\n", r);
                 logger.flush();
-                Rule r_max = r;
 
                 /* 遍历r的邻居 */
-                r_max = findExtension(r, candidates);
+                int existing_candidates = candidates.size();
+                findExtension(r, candidates);
+                int extensions_cnt = candidates.size() - existing_candidates;
+                int origins_cnt = 0;
                 if (config.searchOrigins) {
-                    r_max = findOrigin(r, candidates);
+                    findOrigin(r, candidates);
+                    origins_cnt = candidates.size() - existing_candidates - extensions_cnt;
                 }
 
-                if (r_max == r) {
+                if (0 == (extensions_cnt + origins_cnt)) {
                     optimals.add(r);
                 }
 
                 /* 监测：分支数量信息 */
                 final PerformanceMonitor.BranchInfo branch_info = new PerformanceMonitor.BranchInfo(
-                        r.size(), extensions.size(), origins.size()
+                        r.size(), extensions_cnt, origins_cnt
                 );
                 performanceMonitor.branchProgress.add(branch_info);
             }
@@ -130,14 +131,14 @@ public abstract class SInC {
         }
     }
 
-    protected Rule findExtension(final Rule rule, PriorityQueue<Rule> candidates) throws InterruptedSignal {
-        Rule r_max = rule;
-        final Eval.EvalMetric eval_metric = config.evalMetric;
-
+    /**
+     * 遍历extensions，把得分更高的放入candidates列表
+     */
+    protected void findExtension(final Rule rule, PriorityQueue<Rule> candidates) throws InterruptedSignal {
         Eval eval = rule.getEval();
         if (config.stopCompressionRate <= eval.value(Eval.EvalMetric.CompressionRate) || 0 == eval.getNegCnt()) {
             /* 如果到达停止阈值，不再进行extension */
-            return r_max;
+            return;
         }
 
         /* 先找到所有空白的参数 */
@@ -172,13 +173,7 @@ public abstract class SInC {
                         final Rule.UpdateStatus update_status = new_rule.boundFreeVar2ExistingVar(
                                 vacant.predIdx, vacant.argIdx, var_id
                         );
-                        checkRule(update_status, new_rule);
-                        if (new_rule.getEval().value(eval_metric) > rule.getEval().value(eval_metric)) {
-                            candidates.add(new_rule);
-                            if (new_rule.getEval().value(eval_metric) > r_max.getEval().value(eval_metric)) {
-                                r_max = new_rule;
-                            }
-                        }
+                        checkThenAddRule(update_status, new_rule, rule, candidates);
                         break;
                     }
                 }
@@ -195,13 +190,7 @@ public abstract class SInC {
                             final Rule.UpdateStatus update_status = new_rule.boundFreeVar2ExistingVar(
                                     functor, arity, arg_idx, var_id
                             );
-                            checkRule(update_status, new_rule);
-                            if (new_rule.getEval().value(eval_metric) > rule.getEval().value(eval_metric)) {
-                                candidates.add(new_rule);
-                                if (new_rule.getEval().value(eval_metric) > r_max.getEval().value(eval_metric)) {
-                                    r_max = new_rule;
-                                }
-                            }
+                            checkThenAddRule(update_status, new_rule, rule, candidates);
                         }
                     }
                 }
@@ -222,13 +211,7 @@ public abstract class SInC {
                 final Rule.UpdateStatus update_status = new_rule.boundFreeVar2Constant(
                         first_vacant.predIdx, first_vacant.argIdx, const_symbol
                 );
-                checkRule(update_status, new_rule);
-                if (new_rule.getEval().value(eval_metric) > rule.getEval().value(eval_metric)) {
-                    candidates.add(new_rule);
-                    if (new_rule.getEval().value(eval_metric) > r_max.getEval().value(eval_metric)) {
-                        r_max = new_rule;
-                    }
-                }
+                checkThenAddRule(update_status, new_rule, rule, candidates);
             }
 
             /* 找到两个位置尝试同一个新变量 */
@@ -240,13 +223,7 @@ public abstract class SInC {
                     final Rule.UpdateStatus update_status = new_rule.boundFreeVars2NewVar(
                             first_vacant.predIdx, first_vacant.argIdx, second_vacant.predIdx, second_vacant.argIdx
                     );
-                    checkRule(update_status, new_rule);
-                    if (new_rule.getEval().value(eval_metric) > rule.getEval().value(eval_metric)) {
-                        candidates.add(new_rule);
-                        if (new_rule.getEval().value(eval_metric) > r_max.getEval().value(eval_metric)) {
-                            r_max = new_rule;
-                        }
-                    }
+                    checkThenAddRule(update_status, new_rule, rule, candidates);
                 }
             }
             for (Map.Entry<String, Integer> entry: func_2_arity_map.entrySet()) {
@@ -259,29 +236,18 @@ public abstract class SInC {
                         final Rule.UpdateStatus update_status = new_rule.boundFreeVars2NewVar(
                                 functor, arity, arg_idx, first_vacant.predIdx, first_vacant.argIdx
                         );
-                        checkRule(update_status, new_rule);
-                        if (new_rule.getEval().value(eval_metric) > rule.getEval().value(eval_metric)) {
-                            candidates.add(new_rule);
-                            if (new_rule.getEval().value(eval_metric) > r_max.getEval().value(eval_metric)) {
-                                r_max = new_rule;
-                            }
-                        }
+                        checkThenAddRule(update_status, new_rule, rule, candidates);
                     }
                 }
             }
         }
-
-        return r_max;
     }
 
     abstract protected Map<String, Integer> getFunctor2ArityMap();
 
     abstract protected Map<String, List<String>[]> getFunctor2PromisingConstantMap();
 
-    protected Rule findOrigin(Rule rule, PriorityQueue<Rule> candidates) throws InterruptedSignal {
-        Rule r_max = rule;
-        final Eval.EvalMetric eval_metric = config.evalMetric;
-
+    protected void findOrigin(Rule rule, PriorityQueue<Rule> candidates) throws InterruptedSignal {
         for (int pred_idx = Rule.HEAD_PRED_IDX; pred_idx < rule.length(); pred_idx++) {
             /* 从Head开始删除可能会出现Head中没有Bounded Var但是Body不为空的情况，按照定义来说，这种规则是不在
                搜索空间中的，但是会被isInvalid方法检查出来 */
@@ -290,18 +256,10 @@ public abstract class SInC {
                 if (null != predicate.args[arg_idx]) {
                     final Rule new_rule = rule.clone();
                     final Rule.UpdateStatus update_status = new_rule.removeBoundedArg(pred_idx, arg_idx);
-                    checkRule(update_status, new_rule);
-                    if (new_rule.getEval().value(eval_metric) > rule.getEval().value(eval_metric)) {
-                        candidates.add(new_rule);
-                        if (new_rule.getEval().value(eval_metric) > r_max.getEval().value(eval_metric)) {
-                            r_max = new_rule;
-                        }
-                    }
+                    checkThenAddRule(update_status, new_rule, rule, candidates);
                 }
             }
         }
-
-        return r_max;
     }
 
     abstract protected UpdateResult updateKb(Rule rule);
@@ -333,7 +291,7 @@ public abstract class SInC {
         }
     }
 
-    protected GraphAnalyseResult findStartSet() {
+    protected GraphAnalyseResult findNecessaries() {
         /* 在更新KB的时候已经把Graph顺便做好了，这里只需要查找对应的点即可 */
         /* 找出所有不能被prove的点 */
         final GraphAnalyseResult result = new GraphAnalyseResult();
@@ -488,11 +446,13 @@ public abstract class SInC {
         return performanceMonitor;
     }
 
-    protected void checkThenAddRule(Collection<Rule> collection, Rule.UpdateStatus updateStatus, Rule rule)
+    protected void checkThenAddRule(Rule.UpdateStatus updateStatus, Rule extendedRule, Rule originalRule, Queue<Rule> candidates)
             throws InterruptedSignal {
         switch (updateStatus) {
             case NORMAL:
-                collection.add(rule);
+                if (extendedRule.getEval().value(config.evalMetric) > originalRule.getEval().value(config.evalMetric)) {
+                    candidates.add(extendedRule);
+                }
                 break;
             case INVALID:
                 performanceMonitor.invalidSearches++;
@@ -509,33 +469,7 @@ public abstract class SInC {
             default:
                 throw new Error("Unknown Update Status of Rule: " + updateStatus.name());
         }
-        recordRuleStatus(rule, updateStatus);
-        if (interrupted) {
-            throw new InterruptedSignal("Interrupted");
-        }
-    }
-
-    protected void checkRule(Rule.UpdateStatus updateStatus, Rule rule)
-            throws InterruptedSignal {
-        switch (updateStatus) {
-            case NORMAL:
-                break;
-            case INVALID:
-                performanceMonitor.invalidSearches++;
-                break;
-            case DUPLICATED:
-                performanceMonitor.duplications++;
-                break;
-            case INSUFFICIENT_COVERAGE:
-                performanceMonitor.fcFilteredRules++;
-                break;
-            case TABU_PRUNED:
-                performanceMonitor.tabuPruned++;
-                break;
-            default:
-                throw new Error("Unknown Update Status of Rule: " + updateStatus.name());
-        }
-        recordRuleStatus(rule, updateStatus);
+        recordRuleStatus(extendedRule, updateStatus);
         if (interrupted) {
             throw new InterruptedSignal("Interrupted");
         }
@@ -597,7 +531,7 @@ public abstract class SInC {
 
             /* 解析Graph找start set */
             final long time_graph_analyse_begin = System.currentTimeMillis();
-            GraphAnalyseResult graph_analyse_result = findStartSet();
+            GraphAnalyseResult graph_analyse_result = findNecessaries();
             performanceMonitor.startSetSize = graph_analyse_result.startSetSize;
             performanceMonitor.startSetSizeWithoutFvs = graph_analyse_result.startSetSizeWithoutFvs;
             performanceMonitor.sccNumber = graph_analyse_result.sccNumber;
@@ -644,7 +578,7 @@ public abstract class SInC {
 
             /* 解析Graph找start set */
             final long time_graph_analyse_begin = System.currentTimeMillis();
-            GraphAnalyseResult graph_analyse_result = findStartSet();
+            GraphAnalyseResult graph_analyse_result = findNecessaries();
             performanceMonitor.startSetSize = graph_analyse_result.startSetSize;
             performanceMonitor.startSetSizeWithoutFvs = graph_analyse_result.startSetSizeWithoutFvs;
             performanceMonitor.sccNumber = graph_analyse_result.sccNumber;
@@ -679,7 +613,7 @@ public abstract class SInC {
 
             /* 解析Graph找start set */
             final long time_graph_analyse_begin = System.currentTimeMillis();
-            GraphAnalyseResult graph_analyse_result = findStartSet();
+            GraphAnalyseResult graph_analyse_result = findNecessaries();
             performanceMonitor.startSetSize = graph_analyse_result.startSetSize;
             performanceMonitor.startSetSizeWithoutFvs = graph_analyse_result.startSetSizeWithoutFvs;
             performanceMonitor.sccNumber = graph_analyse_result.sccNumber;
