@@ -12,6 +12,21 @@ public class Tarjan<T extends BaseGraphNode<?>> {
         this.graph = graph;
     }
 
+    private void clearMarks() {
+        for (Map.Entry<T, Set<T>> entry: graph.entrySet()) {
+            T source_node = entry.getKey();
+            Set<T> neighbours = entry.getValue();
+            source_node.index = BaseGraphNode.NO_TARJAN_INDEX;
+            source_node.lowLink = BaseGraphNode.NO_TARJAN_LOW_LINK;
+            source_node.onStack = false;
+            for (T neighbour: neighbours) {
+                neighbour.index = BaseGraphNode.NO_TARJAN_INDEX;
+                neighbour.lowLink = BaseGraphNode.NO_TARJAN_LOW_LINK;
+                neighbour.onStack = false;
+            }
+        }
+    }
+
     public List<Set<T>> run() {
         for (T node : graph.keySet()) {
             if (-1 == node.index) {

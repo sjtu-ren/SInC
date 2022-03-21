@@ -22,6 +22,7 @@ public enum Dataset {
     FAMILY_MEDIUM(Dir.DIR + "/family_medium.tsv", "Family.medium", "Fm"),
     ONLINE_SALES(Dir.DIR + "/online_sales.tsv", "Online Sales", "OS"),
     RESTAURANT_RANKING(Dir.DIR + "/restaurant_ranking.tsv", "Restaurant Ranking", "RR"),
+    CODEX(Dir.DIR + "/codex.tsv", "CoDeX", "CX"),
     Test(Dir.DIR + "/test.tsv", "Test", "Test")
     ;
 
