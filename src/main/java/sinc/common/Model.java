@@ -4,6 +4,7 @@ import sinc.SInC;
 import sinc.SincConfig;
 import sinc.impl.cached.recal.SincWithRecalculateCache;
 import sinc.impl.cached.spec.SincWithSpecificCache;
+import sinc.impl.pruned.observed.SincWithFingerprintObservation;
 import sinc.impl.pruned.symmetric.Sinc4Symmetric;
 import sinc.impl.pruned.tabu.SincWithTabuPruning;
 
@@ -14,6 +15,7 @@ public enum Model {
     CACHE_COMPACT("C", "SInC with compact cache"),
     CACHE_MATERIALIZED("M", "SInC with materialized cache"),
     TABU("T", "Model C with tabu pruning"),
+    OBSERVED_TABU("To", "Model T which observes rules pruned by duplication and tabu set"),
     SYMMETRY("Y", "Model T focus on symmetric relations (for experiments only)");
 
     static final Map<String, Model> nameMap = new HashMap<>();
@@ -43,7 +45,9 @@ public enum Model {
         return nameMap.get(name);
     }
 
-    public static SInC getModel(String name, SincConfig config, String dataPath, String dumpPath, String logPath) throws SincException {
+    public static SInC getModel(
+            String name, SincConfig config, String dataPath, String dumpPath, String logPath
+    ) throws SincException {
         switch (getModelByName(name)) {
             case CACHE_COMPACT:
                 return new SincWithRecalculateCache(config, dataPath, dumpPath, logPath);
@@ -51,6 +55,8 @@ public enum Model {
                 return new SincWithSpecificCache(config, dataPath, dumpPath, logPath);
             case TABU:
                 return new SincWithTabuPruning(config, dataPath, dumpPath, logPath);
+            case OBSERVED_TABU:
+                return new SincWithFingerprintObservation(config, dataPath, dumpPath, logPath);
             case SYMMETRY:
                 return new Sinc4Symmetric(config, dataPath, dumpPath, logPath);
             default:

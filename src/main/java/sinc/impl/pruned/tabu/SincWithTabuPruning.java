@@ -11,8 +11,8 @@ import java.util.*;
 public class SincWithTabuPruning extends SincWithRecalculateCache {
 
     /* 每次迭代只保留下次生成的长度的tabu rules */
-    private Map<MultiSet<String>, Set<RuleFingerPrint>> category2TabuSetMap = new HashMap<>();
-    private final TabuMonitor tabuMonitor = new TabuMonitor();
+    protected Map<MultiSet<String>, Set<RuleFingerPrint>> category2TabuSetMap = new HashMap<>();
+    protected final TabuMonitor tabuMonitor = new TabuMonitor();
 
     public SincWithTabuPruning(SincConfig config, String kbPath, String dumpPath, String logPath) {
         super(config, kbPath, dumpPath, logPath);

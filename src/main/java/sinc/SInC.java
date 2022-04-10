@@ -18,16 +18,16 @@ public abstract class SInC {
     protected final String dumpPath;
     protected final PrintWriter logger;
 
-    private final List<Rule> hypothesis = new ArrayList<>();
-    private final Map<Predicate, BaseGraphNode<Predicate>> predicate2NodeMap = new HashMap<>();
-    private final Map<BaseGraphNode<Predicate>, Set<BaseGraphNode<Predicate>>> dependencyGraph = new HashMap<>();
-    private final Set<Predicate> startSet = new HashSet<>();
-    private final Set<Predicate> counterExamples = new HashSet<>();
-    private final Set<String> supplementaryConstants = new HashSet<>();
-    private final PerformanceMonitor performanceMonitor = new PerformanceMonitor();
+    protected final List<Rule> hypothesis = new ArrayList<>();
+    protected final Map<Predicate, BaseGraphNode<Predicate>> predicate2NodeMap = new HashMap<>();
+    protected final Map<BaseGraphNode<Predicate>, Set<BaseGraphNode<Predicate>>> dependencyGraph = new HashMap<>();
+    protected final Set<Predicate> startSet = new HashSet<>();
+    protected final Set<Predicate> counterExamples = new HashSet<>();
+    protected final Set<String> supplementaryConstants = new HashSet<>();
+    protected final PerformanceMonitor performanceMonitor = new PerformanceMonitor();
 
     /* 终止执行的flag */
-    private boolean interrupted = false;
+    protected boolean interrupted = false;
 
     protected static class GraphAnalyseResult {
         public int startSetSize = 0;
