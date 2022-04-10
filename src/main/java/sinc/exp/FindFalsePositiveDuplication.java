@@ -8,7 +8,7 @@ import java.util.*;
 
 public class FindFalsePositiveDuplication {
 
-    public static final int SAMPLE_NUM = 1000;
+    public static final int SAMPLE_NUM = 100000;
 
     public static void main(String[] args) throws Exception {
         if (1 != args.length) {
@@ -54,9 +54,9 @@ public class FindFalsePositiveDuplication {
             fingerprint_time_cost_nano += time_done - time_start;
         }
 
-        System.out.printf("Brute Force Time Cost (ms): %.2f\n", brute_force_time_cost_nano / 1000.0);
-        System.out.printf("Fingerprint Time Cost (ms): %.2f\n", fingerprint_time_cost_nano / 1000.0);
-        System.out.printf("Speed-up: %.2f", brute_force_time_cost_nano * 1.0 / fingerprint_time_cost_nano);
+        System.out.printf("Brute Force Time Cost (ms): %.2f\n", brute_force_time_cost_nano / 1000000.0);
+        System.out.printf("Fingerprint Time Cost (ms): %.2f\n", fingerprint_time_cost_nano / 1000000.0);
+        System.out.printf("Speed-up: %.2f\n", brute_force_time_cost_nano * 1.0 / fingerprint_time_cost_nano);
         System.out.printf("False Positive: %d/%d\n", false_positive_cnt, compared_pair_cnt);
         System.out.printf("Positive: %d/%d\n", positive_cnt, compared_pair_cnt);
         System.out.printf("FP Rate: %.2f\n", false_positive_cnt * 100.0 / compared_pair_cnt);
