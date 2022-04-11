@@ -8,34 +8,49 @@ import java.util.*;
 
 public class FindFalsePositiveDuplication {
 
-    public static final int SAMPLE_NUM = 100000;
+    public static final int SAMPLE_NUM = 10000;
+
+    static class RulePair{
+        final List<Predicate> rule1, rule2;
+
+        public RulePair(List<Predicate> rule1, List<Predicate> rule2) {
+            this.rule1 = rule1;
+            this.rule2 = rule2;
+        }
+    }
 
     public static void main(String[] args) throws Exception {
         if (1 != args.length) {
             System.out.println("Usage: <Compare File Path>");
         }
-
         final String COMP_FILE_PATH = args[0];
         BufferedReader reader = new BufferedReader(new FileReader(COMP_FILE_PATH));
+        List<RulePair> rule_pairs = new ArrayList<>();
+        for (int i = 0; i < SAMPLE_NUM; i++) {
+            String line1 = reader.readLine();
+            String line2 = reader.readLine();
+            if (null == line1 || null == line2) {
+                break;
+            }
+            rule_pairs.add(new RulePair(parseRule(line1), parseRule(line2)));
+        }
+
+        System.out.println("--- Compare Basic ---");
+        compareBasic(rule_pairs);
+
+        System.out.println("--- Compare Cache ---");
+        compareSpeedUp(rule_pairs);
+    }
+
+    static void compareBasic(List<RulePair> rulePairs) {
         long fingerprint_time_cost_nano = 0;
         long brute_force_time_cost_nano = 0;
         int false_positive_cnt = 0;
         int positive_cnt = 0;
-        int compared_pair_cnt = 0;
-        for (int i = 0; i < SAMPLE_NUM; i++) {
-            /* Parse a pair of rule */
-            String str_rule_1 = reader.readLine();
-            String str_rule_2 = reader.readLine();
-            if (null == str_rule_1 || null == str_rule_2) {
-                break;
-            }
-            List<Predicate> rule1 = parseRule(str_rule_1);
-            List<Predicate> rule2 = parseRule(str_rule_2);
-            compared_pair_cnt++;
-
+        for (RulePair rp: rulePairs) {
             /* Test Brute Force */
             long time_start = System.nanoTime();
-            boolean match = matchRules(rule1, rule2);
+            boolean match = matchRules(rp.rule1, rp.rule2);
             long time_done = System.nanoTime();
             brute_force_time_cost_nano += time_done - time_start;
             if (!match) {
@@ -43,23 +58,68 @@ public class FindFalsePositiveDuplication {
             }
 
             /* Test Fingerprint */
-            RuleFingerPrint fp1 = new RuleFingerPrint(rule1);
-            RuleFingerPrint fp2 = new RuleFingerPrint(rule2);
+            RuleFingerPrint fp1 = new RuleFingerPrint(rp.rule1);
+            RuleFingerPrint fp2 = new RuleFingerPrint(rp.rule2);
             time_start = System.nanoTime();
             match = fp1.equals(fp2);
+            time_done = System.nanoTime();
             if (match) {
                 positive_cnt++;
             }
-            time_done = System.nanoTime();
             fingerprint_time_cost_nano += time_done - time_start;
         }
 
         System.out.printf("Brute Force Time Cost (ms): %.2f\n", brute_force_time_cost_nano / 1000000.0);
         System.out.printf("Fingerprint Time Cost (ms): %.2f\n", fingerprint_time_cost_nano / 1000000.0);
         System.out.printf("Speed-up: %.2f\n", brute_force_time_cost_nano * 1.0 / fingerprint_time_cost_nano);
-        System.out.printf("False Positive: %d/%d\n", false_positive_cnt, compared_pair_cnt);
-        System.out.printf("Positive: %d/%d\n", positive_cnt, compared_pair_cnt);
-        System.out.printf("FP Rate: %.2f\n", false_positive_cnt * 100.0 / compared_pair_cnt);
+        System.out.printf("False Positive: %d/%d\n", false_positive_cnt, rulePairs.size());
+        System.out.printf("Positive: %d/%d\n", positive_cnt, rulePairs.size());
+        System.out.printf("FP Rate: %.2f\n", false_positive_cnt * 100.0 / rulePairs.size());
+    }
+
+    static void compareSpeedUp(List<RulePair> rulePairs) {
+        Set<RuleFingerPrint> fp_cache = new HashSet<>();
+        Set<List<Predicate>> bf_cache = new HashSet<>();
+        long fp_cache_time_nano = 0;
+        long bf_cache_time_nano = 0;
+        int false_positive_cnt = 0;
+        int positive_cnt = 0;
+        for (RulePair rp: rulePairs) {
+            fp_cache.add(new RuleFingerPrint(rp.rule1));
+            bf_cache.add(rp.rule1);
+
+            /* Test Fingerprint */
+            RuleFingerPrint fp2 = new RuleFingerPrint(rp.rule2);
+            long time_start = System.nanoTime();
+            boolean match = !fp_cache.add(fp2);
+            long time_done = System.nanoTime();
+            if (match) {
+                positive_cnt++;
+            }
+            fp_cache_time_nano += time_done - time_start;
+
+            /* Test Brute Force */
+            time_start = System.nanoTime();
+            match = false;
+            for (List<Predicate> r: bf_cache) {
+                if (matchRules(r, rp.rule2)) {
+                    match = true;
+                    break;
+                }
+            }
+            time_done = System.nanoTime();
+            if (!match) {
+                false_positive_cnt++;
+            }
+            bf_cache_time_nano += time_done - time_start;
+        }
+
+        System.out.printf("Brute Force Time Cost (ms): %.2f\n", bf_cache_time_nano / 1000000.0);
+        System.out.printf("Fingerprint Time Cost (ms): %.2f\n", fp_cache_time_nano / 1000000.0);
+        System.out.printf("Speed-up: %.2f\n", bf_cache_time_nano * 1.0 / fp_cache_time_nano);
+        System.out.printf("False Positive: %d/%d\n", false_positive_cnt, rulePairs.size());
+        System.out.printf("Positive: %d/%d\n", positive_cnt, rulePairs.size());
+        System.out.printf("FP Rate: %.2f\n", false_positive_cnt * 100.0 / rulePairs.size());
     }
 
     static List<Predicate> parseRule(String str) {
