@@ -13,7 +13,7 @@ public class TabuAwareRule extends RecalculateCachedRule {
 
     public static TabuAwareRuleMonitor tabuAwareMonitor = new TabuAwareRuleMonitor();
 
-    private final Map<MultiSet<String>, Set<RuleFingerPrint>> category2TabuSetMap;
+    protected final Map<MultiSet<String>, Set<RuleFingerPrint>> category2TabuSetMap;
 
     public TabuAwareRule(
             String headFunctor, Set<RuleFingerPrint> cache, MemKB kb,

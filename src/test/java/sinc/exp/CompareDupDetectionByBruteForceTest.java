@@ -9,7 +9,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class FindFalsePositiveDuplicationTest {
+class CompareDupDetectionByBruteForceTest {
     @Test
     void testRuleParser1() {
         /* p(X, ?, Y) :- */
@@ -21,7 +21,7 @@ class FindFalsePositiveDuplicationTest {
         BareRule rule = new BareRule(rule_structure, new HashSet<>());
         String str = rule.toDumpString();
 
-        List<Predicate> recovered_structure = FindFalsePositiveDuplication.parseRule(str);
+        List<Predicate> recovered_structure = CompareDupDetectionByBruteForce.parseRule(str);
         assertEquals(rule_structure, recovered_structure);
     }
 
@@ -44,7 +44,7 @@ class FindFalsePositiveDuplicationTest {
         BareRule rule = new BareRule(rule_structure, new HashSet<>());
         String str = rule.toDumpString();
 
-        List<Predicate> recovered_structure = FindFalsePositiveDuplication.parseRule(str);
+        List<Predicate> recovered_structure = CompareDupDetectionByBruteForce.parseRule(str);
         assertEquals(rule_structure, recovered_structure);
     }
 
@@ -67,7 +67,7 @@ class FindFalsePositiveDuplicationTest {
         RuleFingerPrint fp2 = new RuleFingerPrint(rule2);
 
         assertEquals(fp1, fp2);
-        assertTrue(FindFalsePositiveDuplication.matchRules(rule1, rule2));
+        assertTrue(CompareDupDetectionByBruteForce.matchRules(rule1, rule2));
     }
 
     @Test
@@ -89,7 +89,7 @@ class FindFalsePositiveDuplicationTest {
         RuleFingerPrint fp2 = new RuleFingerPrint(rule2);
 
         assertEquals(fp1, fp2);
-        assertTrue(FindFalsePositiveDuplication.matchRules(rule1, rule2));
+        assertTrue(CompareDupDetectionByBruteForce.matchRules(rule1, rule2));
     }
 
     @Test
@@ -123,7 +123,7 @@ class FindFalsePositiveDuplicationTest {
         RuleFingerPrint fp2 = new RuleFingerPrint(rule2);
 
         assertEquals(fp1, fp2);
-        assertTrue(FindFalsePositiveDuplication.matchRules(rule1, rule2));
+        assertTrue(CompareDupDetectionByBruteForce.matchRules(rule1, rule2));
     }
 
     @Test
@@ -153,7 +153,7 @@ class FindFalsePositiveDuplicationTest {
         RuleFingerPrint fp2 = new RuleFingerPrint(rule2);
 
         assertEquals(fp1, fp2);
-        assertTrue(FindFalsePositiveDuplication.matchRules(rule1, rule2));
+        assertTrue(CompareDupDetectionByBruteForce.matchRules(rule1, rule2));
     }
 
     @Test
@@ -207,7 +207,7 @@ class FindFalsePositiveDuplicationTest {
         RuleFingerPrint fp2 = new RuleFingerPrint(rule2);
 
         assertEquals(fp1, fp2);
-        assertTrue(FindFalsePositiveDuplication.matchRules(rule1, rule2));
+        assertTrue(CompareDupDetectionByBruteForce.matchRules(rule1, rule2));
     }
 
     @Test
@@ -244,7 +244,7 @@ class FindFalsePositiveDuplicationTest {
         RuleFingerPrint fp2 = new RuleFingerPrint(rule2);
 
         assertEquals(fp1, fp2);
-        assertFalse(FindFalsePositiveDuplication.matchRules(rule1, rule2));
+        assertFalse(CompareDupDetectionByBruteForce.matchRules(rule1, rule2));
     }
 
     @Test
@@ -297,7 +297,7 @@ class FindFalsePositiveDuplicationTest {
         RuleFingerPrint fp2 = new RuleFingerPrint(rule2);
 
         assertEquals(fp1, fp2);
-        assertFalse(FindFalsePositiveDuplication.matchRules(rule1, rule2));
+        assertFalse(CompareDupDetectionByBruteForce.matchRules(rule1, rule2));
     }
 
     @Test
@@ -332,6 +332,6 @@ class FindFalsePositiveDuplicationTest {
         RuleFingerPrint fp2 = new RuleFingerPrint(rule2);
 
         assertNotEquals(fp1, fp2);
-        assertFalse(FindFalsePositiveDuplication.matchRules(rule1, rule2));
+        assertFalse(CompareDupDetectionByBruteForce.matchRules(rule1, rule2));
     }
 }

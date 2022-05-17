@@ -21,7 +21,10 @@ public class RuleFingerPrint {
     /* 'otherEquivClasses'可以不必是Multiset，可以用Set代替，因为Extension操作中不会引入Independent Fragment */
     private final MultiSet<MultiSet<ArgIndicator>> otherEquivClasses;
 
+    public final List<Predicate> rule;
+
     public RuleFingerPrint(List<Predicate> rule) {
+        this.rule = rule;
         final Predicate head_predicate = rule.get(0);
         headFunctor = head_predicate.functor;
         headEquivClasses = new MultiSet[head_predicate.arity()];

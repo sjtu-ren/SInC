@@ -6,7 +6,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.*;
 
-public class FindFalsePositiveDuplication {
+public class CompareDupDetectionByBruteForce {
 
     public static final int SAMPLE_NUM = 10000;
 
@@ -39,7 +39,7 @@ public class FindFalsePositiveDuplication {
         compareBasic(rule_pairs);
 
         System.out.println("--- Compare Cache ---");
-        compareSpeedUp(rule_pairs);
+        compareProgress(rule_pairs);
     }
 
     static void compareBasic(List<RulePair> rulePairs) {
@@ -77,7 +77,7 @@ public class FindFalsePositiveDuplication {
         System.out.printf("FP Rate: %.2f\n", false_positive_cnt * 100.0 / rulePairs.size());
     }
 
-    static void compareSpeedUp(List<RulePair> rulePairs) {
+    static void compareProgress(List<RulePair> rulePairs) {
         Set<RuleFingerPrint> fp_cache = new HashSet<>();
         Set<List<Predicate>> bf_cache = new HashSet<>();
         long fp_cache_time_nano = 0;

@@ -11,6 +11,7 @@ import java.util.*;
 public class SincWithFingerprintObservation extends SincWithTabuPruning {
 
     protected PrintWriter dupRuleWriter;
+    protected PrintWriter specRuleWriter;
 
     public SincWithFingerprintObservation(
             SincConfig config, String kbPath, String dumpPath, String logPath
@@ -25,15 +26,24 @@ public class SincWithFingerprintObservation extends SincWithTabuPruning {
             writer = new PrintWriter(System.out);
         }
         this.dupRuleWriter = writer;
+
+        String specRulePath = (null == logPath) ? null : logPath.replace(".log", ".spec");
+        try {
+            writer = (null == specRulePath) ? new PrintWriter(System.out, true) : new PrintWriter(specRulePath);
+        } catch (IOException e) {
+            writer = new PrintWriter(System.out);
+        }
+        this.specRuleWriter = writer;
     }
 
     protected Rule getStartRule(String headFunctor, Set<RuleFingerPrint> cache) {
-        return new RuleWithDupSpecObservation(headFunctor, new HashMap<>(), kb, category2TabuSetMap, dupRuleWriter);
+        return new RuleWithDupSpecObservation(headFunctor, new HashMap<>(), kb, category2TabuSetMap, dupRuleWriter, specRuleWriter);
     }
 
     @Override
     protected void showMonitor() {
         super.showMonitor();
         dupRuleWriter.flush();
+        specRuleWriter.flush();
     }
 }

@@ -1,5 +1,6 @@
 package sinc.impl.pruned.observed;
 
+import sinc.common.Predicate;
 import sinc.common.Rule;
 import sinc.common.RuleFingerPrint;
 import sinc.impl.cached.MemKB;
@@ -8,6 +9,7 @@ import sinc.util.MultiSet;
 
 import java.io.PrintWriter;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -17,20 +19,23 @@ public class RuleWithDupSpecObservation extends TabuAwareRule {
 
     protected Map<RuleFingerPrint, Rule> searchedFingerprints;
     protected PrintWriter dupRuleWriter;
+    protected PrintWriter specRuleWriter;
 
     public RuleWithDupSpecObservation(
             String headFunctor, Map<RuleFingerPrint, Rule> cache, MemKB kb, Map<MultiSet<String>,
-            Set<RuleFingerPrint>> category2TabuSetMap, PrintWriter dupRuleWriter
+            Set<RuleFingerPrint>> category2TabuSetMap, PrintWriter dupRuleWriter, PrintWriter specRuleWriter
     ) {
         super(headFunctor, uselessCache, kb, category2TabuSetMap);
         this.searchedFingerprints = cache;
         this.dupRuleWriter = dupRuleWriter;
+        this.specRuleWriter = specRuleWriter;
     }
 
     public RuleWithDupSpecObservation(RuleWithDupSpecObservation another) {
         super(another);
         this.searchedFingerprints = another.searchedFingerprints;
         this.dupRuleWriter = another.dupRuleWriter;
+        this.specRuleWriter = another.specRuleWriter;
     }
 
     @Override
@@ -310,5 +315,39 @@ public class RuleWithDupSpecObservation extends TabuAwareRule {
         long time_evaluated_nano = System.nanoTime();
         tabuAwareMonitor.evalTimeNano += time_evaluated_nano - time_updated_nano;
         return UpdateStatus.NORMAL;
+    }
+
+    protected boolean tabuHit() {
+        boolean hit = false;
+        for (int subset_size = 0; subset_size < structure.size(); subset_size++) {
+            for (MultiSet<String> category_subset : categorySubsets(subset_size)) {
+                final Set<RuleFingerPrint> tabu_set = category2TabuSetMap.get(category_subset);
+                if (null == tabu_set) continue;
+                for (RuleFingerPrint rfp : tabu_set) {
+                    tabuAwareMonitor.tabuCompares++;
+                    if (rfp.predecessorOf(this.fingerPrint)) {
+                        specRuleWriter.println(this.toDumpString());
+                        specRuleWriter.println(toDumpString(rfp.rule));
+                        hit = true;
+                        break;
+                    }
+                }
+                if (hit) break;
+            }
+        }
+        return hit;
+    }
+
+    public String toDumpString(List<Predicate> structure) {
+        StringBuilder builder = new StringBuilder(structure.get(0).toString());
+        builder.append(":-");
+        if (1 < structure.size()) {
+            builder.append(structure.get(1));
+            for (int i = 2; i < structure.size(); i++) {
+                builder.append(',');
+                builder.append(structure.get(i).toString());
+            }
+        }
+        return builder.toString();
     }
 }
