@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.util.*;
 
 public class CompareSpecDetectionByBruteForce {
-    public static final int SAMPLE_NUM = 400;
+    public static int SAMPLE_NUM = 400;
 
     static class RulePair{
         final List<Predicate> original, extended;
@@ -24,11 +24,12 @@ public class CompareSpecDetectionByBruteForce {
     static MemKB kb;
 
     public static void main(String[] args) throws Exception {
-        if (2 != args.length) {
-            System.out.println("Usage: <Compare File Path> <KB File Path>");
+        if (3 != args.length) {
+            System.out.println("Usage: <Compare File Path> <KB File Path> <#Samples>");
         }
         final String COMP_FILE_PATH = args[0];
         final String KB_FILE_PATH = args[1];
+        SAMPLE_NUM = Integer.parseInt(args[2]);
 
         BufferedReader reader = new BufferedReader(new FileReader(COMP_FILE_PATH));
         List<RulePair> rule_pairs = new ArrayList<>();
