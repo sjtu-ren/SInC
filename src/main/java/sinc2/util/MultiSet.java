@@ -35,6 +35,13 @@ public class MultiSet<T> {
         size++;
     }
 
+    public void addAll(T[] elements) {
+        for (T element: elements) {
+            cntMap.compute(element, (k, v) -> (null == v) ? 1 : v + 1);
+        }
+        size += elements.length;
+    }
+
     public void addAll(MultiSet<T> another) {
         for (Map.Entry<T, Integer> entry: another.cntMap.entrySet()) {
             this.cntMap.compute(entry.getKey(), (k, v) -> (null == v) ? entry.getValue() : v + entry.getValue());

@@ -1,4 +1,4 @@
-package sinc2.common;
+package sinc2.util;
 
 import java.util.Objects;
 

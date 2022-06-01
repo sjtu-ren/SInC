@@ -1,6 +1,6 @@
 package sinc2.kb;
 
-import sinc2.common.Pair;
+import sinc2.util.Pair;
 
 import java.io.*;
 import java.nio.file.Path;

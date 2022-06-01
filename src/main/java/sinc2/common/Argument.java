@@ -7,6 +7,8 @@ package sinc2.common;
  * mapped to constant symbols and variables. The highest bit is a flag distinguishing variables from constants. If the
  * highest bit is 0, the argument value is a constant symbol; otherwise, it is a variable ID.
  *
+ * The range of applicable constant is [1, 2^31 - 1]; [0, 2^31 - 1] for variable IDs.
+ *
  * @since 2.0
  */
 public class Argument {
@@ -47,7 +49,15 @@ public class Argument {
     }
 
     /**
-     * Check if the argument is a variable.
+     * Check if the argument is non-empty.
+     */
+    public static boolean isNonEmpty(int argument) {
+        return 0 != argument;
+    }
+
+    /**
+     * Check if the argument is a variable (specifically, a limited variable; an unlimited variable is denoted by empty
+     * value).
      */
     public static boolean isVariable(int argument) {
         return 0 != (FLAG_VARIABLE & argument);

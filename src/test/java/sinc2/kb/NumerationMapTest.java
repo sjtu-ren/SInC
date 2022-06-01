@@ -3,7 +3,7 @@ package sinc2.kb;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import sinc2.common.Pair;
+import sinc2.util.Pair;
 
 import java.io.BufferedReader;
 import java.io.File;
