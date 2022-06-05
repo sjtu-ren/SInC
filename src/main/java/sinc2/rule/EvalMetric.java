@@ -10,7 +10,7 @@ import java.util.Map;
  */
 public enum EvalMetric {
     /** Compression Rate */
-    CompressionRate("τ", "Compression Rate"),
+    CompressionRatio("τ", "Compression Rate"),
 
     /** Compression Capacity */
     CompressionCapacity("δ", "Compression Capacity"),

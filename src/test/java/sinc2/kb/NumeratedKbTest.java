@@ -5,6 +5,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -415,5 +417,64 @@ class NumeratedKbTest {
         assertEquals(17, kb.totalMappings());
         assertEquals(3, kb.totalRelations());
         assertEquals(8, kb.totalRecords());
+    }
+
+    @Test
+    void testEntailment() throws IOException, KbException {
+        NumeratedKb kb = new NumeratedKb(testKbManager.getKbName(), TestKbManager.MEM_DIR, true);
+        kb.setAsEntailed(1, new int[]{4, 5, 6});
+        kb.setAsEntailed(1, new int[]{4, 4, 4});
+        kb.setAsEntailed(2, new int[]{7, 9});
+        assertTrue(kb.recordIsEntailed(1, new int[]{4, 5, 6}));
+        assertFalse(kb.recordIsEntailed(1, new int[]{4, 4, 4}));
+        assertFalse(kb.recordIsEntailed(1, new int[]{7, 8, 9}));
+        assertFalse(kb.recordIsEntailed(1, new int[]{0xa, 0xb, 0xc}));
+        assertFalse(kb.recordIsEntailed(1, new int[]{0xd, 0xe, 0xf}));
+        assertTrue(kb.recordIsEntailed(2, new int[]{7, 9}));
+        assertFalse(kb.recordIsEntailed(2, new int[]{4, 6}));
+        assertFalse(kb.recordIsEntailed(2, new int[]{0xa, 0xc}));
+        assertFalse(kb.recordIsEntailed(2, new int[]{0xd, 0xf}));
+        assertFalse(kb.recordIsEntailed(3, new int[]{5, 6}));
+        assertFalse(kb.recordIsEntailed(3, new int[]{8, 9}));
+        assertFalse(kb.recordIsEntailed(3, new int[]{0xb, 0xc}));
+        assertFalse(kb.recordIsEntailed(3, new int[]{0x10, 0x11}));
+    }
+
+    @Test
+    void testPromisingConstants() throws IOException, KbException {
+        NumeratedKb kb = new NumeratedKb(testKbManager.getKbName(), TestKbManager.MEM_DIR, true);
+        kb.addRecord(1, new int[]{4, 4, 4});
+        kb.addRecord(2, new int[]{8, 9});
+        kb.addRecord(2, new int[]{9, 9});
+        KbRelation.MIN_CONSTANT_COVERAGE = 0.4;
+        kb.updatePromisingConstants();
+        assertArrayEquals(new int[][]{new int[]{4}, new int[0], new int[0]}, kb.getPromisingConstants(1));
+        assertArrayEquals(new int[][]{new int[0], new int[]{9}}, kb.getPromisingConstants(2));
+        assertArrayEquals(new int[][]{new int[0], new int[0]}, kb.getPromisingConstants(3));
+
+        KbRelation.MIN_CONSTANT_COVERAGE = 0.5;
+        kb.updatePromisingConstants();
+        assertArrayEquals(new int[][]{new int[0], new int[0], new int[0]}, kb.getPromisingConstants(1));
+        assertArrayEquals(new int[][]{new int[0], new int[]{9}}, kb.getPromisingConstants(2));
+        assertArrayEquals(new int[][]{new int[0], new int[0]}, kb.getPromisingConstants(3));
+    }
+
+    @Test
+    void testConstants() throws KbException {
+        NumeratedKb kb = new NumeratedKb("test");
+        kb.addRecord("rel", new String[]{"a", "b", "a"});
+        kb.addRecords("rel", new String[][]{new String[]{"a", "b", "c"}, new String[]{"a", "d", "c"}});
+
+        assertEquals(
+                new HashSet<>(List.of(kb.name2Num("a"), kb.name2Num("b"), kb.name2Num("c"), kb.name2Num("d"))),
+                new HashSet<>(kb.getAllConstants())
+        );
+
+        kb.removeRecord("rel", new String[]{"a", "d", "c"});
+
+        assertEquals(
+                new HashSet<>(List.of(kb.name2Num("a"), kb.name2Num("b"), kb.name2Num("c"))),
+                new HashSet<>(kb.getAllConstants())
+        );
     }
 }

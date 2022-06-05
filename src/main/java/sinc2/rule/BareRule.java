@@ -3,6 +3,7 @@ package sinc2.rule;
 import sinc2.common.Predicate;
 import sinc2.util.MultiSet;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -99,5 +100,15 @@ public class BareRule extends Rule {
     @Override
     protected UpdateStatus rmAssignedArgHandlerPostCvg(int predIdx, int argIdx) {
         return UpdateStatus.NORMAL;
+    }
+
+    @Override
+    public Predicate[][] getEvidence() {
+        return new Predicate[0][];
+    }
+
+    @Override
+    public Set<Predicate> getCounterexamples() {
+        return new HashSet<>();
     }
 }

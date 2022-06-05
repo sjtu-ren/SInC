@@ -64,6 +64,13 @@ public class Argument {
     }
 
     /**
+     * Check if the argument is a constant.
+     */
+    public static boolean isConstant(int argument) {
+        return 0 != argument && 0 == (FLAG_VARIABLE & argument);
+    }
+
+    /**
      * Get the encoded value in the argument.
      */
     public static int decode(int argument) {

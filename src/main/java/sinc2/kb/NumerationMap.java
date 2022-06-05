@@ -11,8 +11,8 @@ import java.util.*;
  * The class for the numeration map between name strings and numerations. The applicable integers are the positive ones.
  *
  * The numeration map can be dumped into local storage as multiple regular files, each of which contains no more than
- * 'MAX_MAP_ENTRIES' (default 1M) entries. The files are named by `map<#num>.tsv`. `#num` is the order of the files,
- * starting from 'MAP_FILE_NUMERATION_START' (default 1).
+ * 'MAX_MAP_ENTRIES' (default 1M) entries. The files are named by `map<#num>.tsv` by default. `#num` is the order of the
+ * files, starting from 'MAP_FILE_NUMERATION_START' (default 1).
  *
  * The file contains two columns separated by the tabular char (`'\t'`):
  *   - The 1st column is the string for relation/entity names;
@@ -56,25 +56,72 @@ public class NumerationMap {
      * Create an empty numeration map.
      */
     public NumerationMap() {
-        numArray = new ArrayList<>();
-        numArray.add(null);  // The object at index 0 should not be used.
+        loadHandler(null);
+    }
+
+    /**
+     * Initialize a numeration map by an external mapping.
+     *
+     * @param map A mapping from names to numerations.
+     */
+    public NumerationMap(Map<String, Integer> map) {
+        /* Load the string-to-integer map */
+        this.numMap = new HashMap<>(map);
+
+        /* Create the integer-to-string map */
+        int capacity = Collections.max(map.values()) + 1;
+        numArray = new ArrayList<>(capacity);
+        while (numArray.size() < capacity) {
+            numArray.add(null);
+        }
+        for (Map.Entry<String, Integer> entry: numMap.entrySet()) {
+            numArray.set(entry.getValue(), entry.getKey());
+        }
+
+        /* Find the free integers */
+        for (int i = 1; i < capacity; i++) {
+            if (null == numArray.get(i)) {
+                freeNums.add(i);
+            }
+        }
     }
 
     /**
      * Load the numeration map from map files in the KB path.
+     *
+     * @param kbPath The base path of the KB where the map files locate.
      */
     public NumerationMap(String kbPath) {
         /* Load the string-to-integer map */
-        int max_num = 0;
         File kb_dir = new File(kbPath);
         File[] map_files = kb_dir.listFiles((dir, name) -> name.matches("map[0-9]+.tsv$"));
-        if (null == map_files) {
+        loadHandler(map_files);
+    }
+
+    /**
+     * Load the map from a specific file.
+     *
+     * @param kbPath The base path of the KB where the map files locate.
+     * @param fileName The name of the file
+     */
+    public NumerationMap(String kbPath, String fileName) {
+        loadHandler(new File[]{Paths.get(kbPath, fileName).toFile()});
+    }
+
+    /**
+     * Load the numeration map from files. If no file is given, create an empty map.
+     *
+     * @param mapFiles The files that should be loaded
+     */
+    public void loadHandler(File[] mapFiles) {
+        if (null == mapFiles || 0 == mapFiles.length) {
             /* Initialize as an empty map */
             numArray = new ArrayList<>();
-            numArray.add(null);
+            numArray.add(null);  // The object at index 0 should not be used.
             return;
         }
-        for (File map_file: map_files) {
+        int max_num = 0;
+        for (File map_file: mapFiles) {
             try {
                 BufferedReader reader = new BufferedReader(new FileReader(map_file));
                 String line;
@@ -219,6 +266,20 @@ public class NumerationMap {
             }
             writer.printf("%s\t%x\n", entry.getKey(), entry.getValue());
             records_cnt++;
+        }
+        writer.close();
+    }
+
+    /**
+     * Dump the numeration mapping into a single file, the name of which is "fileName".
+     * @param kbPath The path where the map files will be stored
+     * @param fileName The mapping file name
+     * @throws FileNotFoundException Thrown when the map files failed to be created
+     */
+    public void dump(String kbPath, String fileName) throws FileNotFoundException {
+        PrintWriter writer = new PrintWriter(Paths.get(kbPath, fileName).toFile());
+        for (Map.Entry<String, Integer> entry: numMap.entrySet()) {
+            writer.printf("%s\t%x\n", entry.getKey(), entry.getValue());
         }
         writer.close();
     }

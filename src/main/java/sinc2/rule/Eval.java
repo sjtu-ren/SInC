@@ -31,6 +31,9 @@ public class Eval {
     /** The minimum value of any metric */
     public static final Eval MIN = new EvalMin();
 
+    /** The threshold of the compression ratio of a useful rule */
+    public static final double COMP_RATIO_USEFUL_THRESHOLD = 0.5;
+
     /** The number of positive entailments (double type to be the same as 'negCnt') */
     protected final double posEtls;
 
@@ -86,7 +89,7 @@ public class Eval {
      */
     public double value(EvalMetric type) {
         switch (type) {
-            case CompressionRate:
+            case CompressionRatio:
                 return compRatio;
             case CompressionCapacity:
                 return compCapacity;

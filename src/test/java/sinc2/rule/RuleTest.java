@@ -3,6 +3,8 @@ package sinc2.rule;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import sinc2.common.Argument;
+import sinc2.common.ParsedArg;
+import sinc2.common.ParsedPred;
 import sinc2.common.Predicate;
 import sinc2.kb.NumerationMap;
 import sinc2.util.MultiSet;
@@ -316,5 +318,27 @@ class RuleTest {
         assertEquals(expected.limitedVarCnts, actual.limitedVarCnts);
         assertEquals(expected.fingerprint, actual.fingerprint);
         assertEquals(expected.length, actual.length);
+    }
+
+    @Test
+    void testParseStructure1() {
+        /* p(X, ?, Y) :- */
+        String str = "p(X0,?,X1):-";
+        ParsedPred head = new ParsedPred("p", new ParsedArg[]{ParsedArg.variable(0), null, ParsedArg.variable(1)});
+        assertArrayEquals(new ParsedPred[]{head}, Rule.parseStructure(str).toArray(new ParsedPred[0]));
+    }
+
+    @Test
+    void testParseStructure2() {
+        /* pred(X, tom, X) :- body(Y), another(X, ?, Y) */
+        String str = "pred(X0,tom,X0):-body(X1),another(X0,?,X1)";
+        ParsedPred head = new ParsedPred("pred", new ParsedArg[]{
+                ParsedArg.variable(0), ParsedArg.constant("tom"), ParsedArg.variable(0)}
+        );
+        ParsedPred body1 = new ParsedPred("body", new ParsedArg[]{ParsedArg.variable(1)});
+        ParsedPred body2 = new ParsedPred("another", new ParsedArg[]{
+                ParsedArg.variable(0), null, ParsedArg.variable(1)}
+        );
+        assertArrayEquals(new ParsedPred[]{head, body1, body2}, Rule.parseStructure(str).toArray(new ParsedPred[0]));
     }
 }

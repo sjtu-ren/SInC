@@ -12,7 +12,8 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class NumerationMapTest {
 
@@ -117,7 +118,35 @@ class NumerationMapTest {
     }
 
     @Test
-    void testWrite() throws IOException {
+    void testCreateFromMap() {
+        Map<String, Integer> existing_mapping = new HashMap<>();
+        existing_mapping.put("a", 1);
+        existing_mapping.put("b", 2);
+        existing_mapping.put("d", 4);
+        existing_mapping.put("g", 7);
+        existing_mapping.put("z", 26);
+        NumerationMap map = new NumerationMap(existing_mapping);
+
+        assertEquals(5, map.totalMappings());
+        assertEquals(5, map.numMap.size());
+        assertEquals(27, map.numArray.size());
+        assertEquals(21, map.freeNums.size());
+
+        assertEquals(1, map.name2Num("a"));
+        assertEquals(2, map.name2Num("b"));
+        assertEquals(4, map.name2Num("d"));
+        assertEquals(7, map.name2Num("g"));
+        assertEquals(26, map.name2Num("z"));
+
+        assertEquals("a", map.num2Name(1));
+        assertEquals("b", map.num2Name(2));
+        assertEquals("d", map.num2Name(4));
+        assertEquals("g", map.num2Name(7));
+        assertEquals("z", map.num2Name(26));
+    }
+
+    @Test
+    void testWrite1() throws IOException {
         NumerationMap map = new NumerationMap(testKbManager.getKbPath());
         String tmp_dir_path = testKbManager.createTmpDir();
         map.dump(tmp_dir_path, 1, 2);
@@ -130,14 +159,13 @@ class NumerationMapTest {
         Set<String> map_files = new HashSet<>(List.of(
                 "map1.tsv", "map2.tsv", "map3.tsv", "map4.tsv", "map5.tsv", "map6.tsv", "map7.tsv", "map8.tsv", "map9.tsv"
         ));
-        assertEquals(map_files, new HashSet<>(Arrays.asList(new File(tmp_dir_path).list())));
+        assertEquals(map_files, new HashSet<>(Arrays.asList(Objects.requireNonNull(new File(tmp_dir_path).list()))));
         for (int i = 1; i < 9; i++) {
             BufferedReader reader = new BufferedReader(new FileReader(
                     Paths.get(tmp_dir_path, String.format("map%d.tsv", i)).toFile()
             ));
             int lines = 0;
-            String line;
-            while (null != (line = reader.readLine())) {
+            while (null != reader.readLine()) {
                 lines++;
             }
             reader.close();
@@ -145,12 +173,30 @@ class NumerationMapTest {
         }
         BufferedReader reader = new BufferedReader(new FileReader(Paths.get(tmp_dir_path, "map9.tsv").toFile()));
         int lines = 0;
-        String line;
-        while (null != (line = reader.readLine())) {
+        while (null != reader.readLine()) {
             lines++;
         }
         reader.close();
         assertEquals(1, lines);
+    }
+
+    @Test
+    void testWrite2() throws IOException {
+        NumerationMap map = new NumerationMap(testKbManager.getKbPath());
+        map.dump(testKbManager.getKbPath(), "testmap.tsv");
+        NumerationMap map2 = new NumerationMap(testKbManager.getKbPath(), "testmap.tsv");
+
+        assertEquals(map.totalMappings(), map2.totalMappings());
+        assertEquals(map.numMap.size(), map2.numMap.size());
+        assertEquals(map.numArray.size(), map2.numArray.size());
+        for (Map.Entry<String, Integer> entry: map.numMap.entrySet()) {
+            assertEquals(entry.getValue(), map2.name2Num(entry.getKey()));
+            assertEquals(entry.getKey(), map2.num2Name(entry.getValue()));
+        }
+        for (Map.Entry<String, Integer> entry: map2.numMap.entrySet()) {
+            assertEquals(entry.getValue(), map.name2Num(entry.getKey()));
+            assertEquals(entry.getKey(), map.num2Name(entry.getValue()));
+        }
     }
 
     @Test

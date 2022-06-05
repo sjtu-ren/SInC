@@ -1,5 +1,7 @@
 package sinc2.kb;
 
+import sinc2.common.Argument;
+import sinc2.util.ArrayOperation;
 import sinc2.util.LittleEndianIntIO;
 
 import java.io.File;
@@ -8,10 +10,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -25,24 +24,32 @@ import java.util.regex.Pattern;
  *     records are stored in the file in order, i.e., in the order of: 1st row 1st col, 1st row 2nd col, ..., ith row
  *     jth col, ith row (j+1)th col, ...
  *
+ * Todo: The <#record> should be canceled as it is not necessary for loading records
+ *
  * @since 2.0
  */
 public class KbRelation implements Iterable<Record> {
 
     /** A regex pattern used to parse the relation file name */
-    protected static final Pattern pattern = Pattern.compile("(.+)_([0-9]+)_([0-9]+).rel$");
+    protected static final Pattern REL_FILE_NAME_PATTERN = Pattern.compile("(.+)_([0-9]+)_([0-9]+).rel$");
+
+    /** The threshold for pruning useful constants */
+    public static double MIN_CONSTANT_COVERAGE = 0.25;
 
     /** The name of the relation */
     protected final String name;
-
     /** The numeration of the relation name */
     protected final int numeration;
-
     /** The arity of the relation */
     protected final int arity;
-
     /** The set of the records */
     protected final Set<Record> records = new HashSet<>();
+    /** The set of entailed records */
+    protected final Set<Record> entailedRecords = new HashSet<>();
+    /** The index of each argument value */
+    protected final Map<Integer, Set<Record>>[] argumentIndices;
+    /** Promising constants for each argument */
+    protected int[][] promisingConstants = null;
 
     /**
      * Get the relation file path.
@@ -89,7 +96,7 @@ public class KbRelation implements Iterable<Record> {
      * Parse the file name of a relation to the components: relation name, arity, total records.
      */
     public static RelationInfo parseRelFilePath(String relFileName) {
-        Matcher matcher = pattern.matcher(relFileName);
+        Matcher matcher = REL_FILE_NAME_PATTERN.matcher(relFileName);
         if (matcher.find()) {
             return new RelationInfo(
                     matcher.group(1), Integer.parseInt(matcher.group(2)), Integer.parseInt(matcher.group(3))
@@ -107,6 +114,10 @@ public class KbRelation implements Iterable<Record> {
         this.name = name;
         this.numeration = numeration;
         this.arity = arity;
+        this.argumentIndices = new Map[arity];
+        for (int i = 0; i < arity; i++) {
+            argumentIndices[i] = new HashMap<>();
+        }
     }
 
     /**
@@ -127,45 +138,80 @@ public class KbRelation implements Iterable<Record> {
         this.name = name;
         this.numeration = numeration;
         this.arity = arity;
+        this.argumentIndices = new Map[arity];
+        for (int i = 0; i < arity; i++) {
+            argumentIndices[i] = new HashMap<>();
+        }
 
         File rel_file = getRelFilePath(kbPtah, name, arity, totalRecords).toFile();
-        FileInputStream fis = new FileInputStream(rel_file);
+        loadHandler(rel_file, map);
+    }
+
+    /**
+     * Load a single relation from a local file. If the 'numMap' is not NULL, every loaded numeration is checked for
+     * validness in the map.
+     *
+     * @param name The name of the relation
+     * @param numeration The numeration of the relation name
+     * @param arity The arity of the relation
+     * @param fileName The name of the file
+     * @param kbPtah The path to the KB, where the relation file is located
+     * @param map The numeration map for validness check
+     * @throws IOException File read fails
+     * @throws KbException 'map' is not NULL and a loaded numeration is not mapped
+     */
+    public KbRelation(String name, int numeration, int arity, String fileName, String kbPtah, NumerationMap map)
+            throws IOException, KbException {
+        this.name = name;
+        this.numeration = numeration;
+        this.arity = arity;
+        this.argumentIndices = new Map[arity];
+        for (int i = 0; i < arity; i++) {
+            argumentIndices[i] = new HashMap<>();
+        }
+
+        File rel_file = Paths.get(kbPtah, fileName).toFile();
+        loadHandler(rel_file, map);
+    }
+
+    /**
+     * Load a single relation from the local file system. If the 'numMap' is not NULL, every loaded numeration is
+     * checked for validness in the map.
+     *
+     * @param file The relation file
+     * @param map The numeration map for validness check
+     * @throws IOException File read fails
+     * @throws KbException 'map' is not NULL and a loaded numeration is not mapped
+     */
+    protected void loadHandler(File file, NumerationMap map) throws IOException, KbException {
+        FileInputStream fis = new FileInputStream(file);
         byte[] buffer = new byte[Integer.BYTES];
+        int read_args;
         if (null == map) {
-            for (int i = 0; i < totalRecords; i++) {
+            while (true) {
                 int[] args = new int[arity];
-                for (int j = 0; j < arity; j++) {
-                    int read = fis.read(buffer);
-                    if (Integer.BYTES == read) {
-                        args[j] = LittleEndianIntIO.byteArray2LeInt(buffer);
-                    } else {
-                        fis.close();
-                        throw new IOException(String.format(
-                                "Record read failed in relation file (%d read): %s", read, rel_file.getAbsolutePath()
-                        ));
-                    }
+                for (read_args = 0; read_args < arity && Integer.BYTES == fis.read(buffer); read_args++) {
+                    args[read_args] = LittleEndianIntIO.byteArray2LeInt(buffer);
                 }
-                records.add(new Record(args));
+                if (read_args < arity) {
+                    break;
+                }
+                addRecord(new Record(args));
             }
         } else {
-            for (int i = 0; i < totalRecords; i++) {
+            while (true) {
                 int[] args = new int[arity];
-                for (int j = 0; j < arity; j++) {
-                    int read = fis.read(buffer);
-                    if (Integer.BYTES == read) {
-                        args[j] = LittleEndianIntIO.byteArray2LeInt(buffer);
-                        if (null == map.num2Name(args[j])) {
-                            fis.close();
-                            throw new KbException(String.format("Loaded numeration is not mapped: %d", args[j]));
-                        }
-                    } else {
+                for (read_args = 0; read_args < arity && Integer.BYTES == fis.read(buffer); read_args++) {
+                    args[read_args] = LittleEndianIntIO.byteArray2LeInt(buffer);
+                    if (null == map.num2Name(Argument.decode(args[read_args]))) {
                         fis.close();
-                        throw new IOException(String.format(
-                                "Record read failed in relation file (%d read): %s", read, rel_file.getAbsolutePath()
-                        ));
+                        throw new KbException(String.format("Loaded numeration is not mapped: %d", args[read_args]));
                     }
                 }
-                records.add(new Record(args));
+                if (read_args < arity) {
+                    break;
+                }
+                addRecord(new Record(args));
             }
         }
         fis.close();
@@ -183,6 +229,18 @@ public class KbRelation implements Iterable<Record> {
             ));
         }
         records.add(record);
+
+        /* Update the argument index */
+        for (int arg_idx = 0; arg_idx < arity; arg_idx++) {
+            Map<Integer, Set<Record>> index = argumentIndices[arg_idx];
+            index.compute(record.args[arg_idx], (argument, records) -> {
+                if (null == records) {
+                    records = new HashSet<>();
+                }
+                records.add(record);
+                return records;
+            });
+        }
     }
 
     /**
@@ -215,13 +273,66 @@ public class KbRelation implements Iterable<Record> {
     }
 
     /**
+     * Mark a record as entailed. The record will not be marked if it is not in the KB.
+     */
+    public void entailRecord(Record record) {
+        if (hasRecord(record)) {
+            entailedRecords.add(record);
+        }
+    }
+
+    /**
+     * Check if a record has been entailed.
+     */
+    public boolean recordIsEntailed(Record record) {
+        return entailedRecords.contains(record);
+    }
+
+    /**
+     * Update the promising constants according to current records.
+     */
+    public void updatePromisingConstants() {
+        promisingConstants = new int[arity][];
+        int threshold = (int) Math.ceil(records.size() * MIN_CONSTANT_COVERAGE);
+        for (int i = 0; i < arity; i++) {
+            Map<Integer, Set<Record>> argument_index = argumentIndices[i];
+            List<Integer> promising_constants = new ArrayList<>();
+            for (Map.Entry<Integer, Set<Record>> entry: argument_index.entrySet()) {
+                if (threshold <= entry.getValue().size()) {
+                    promising_constants.add(Argument.decode(entry.getKey()));
+                }
+            }
+            promisingConstants[i] = ArrayOperation.toArray(promising_constants);
+        }
+    }
+
+    public int[][] getPromisingConstants() {
+        return promisingConstants;
+    }
+
+    /**
      * Write the relation to a '.rel' file.
      *
      * @param kbPath The path to the KB, where the relation file should be located.
      * @throws IOException File I/O operation error
      */
     public void dump(String kbPath) throws IOException {
-        FileOutputStream fos = new FileOutputStream(getRelFilePath(kbPath, name, arity, records.size()).toFile());
+        dumpHandler(getRelFilePath(kbPath, name, arity, records.size()).toFile());
+    }
+
+    /**
+     * Write the relation to a file.
+     *
+     * @param kbPath The path to the KB, where the relation file should be located.
+     * @param fileName The customized file name.
+     * @throws IOException File I/O operation error
+     */
+    public void dump(String kbPath, String fileName) throws IOException {
+        dumpHandler(Paths.get(kbPath, fileName).toFile());
+    }
+
+    protected void dumpHandler(File file) throws IOException {
+        FileOutputStream fos = new FileOutputStream(file);
         for (Record record: records) {
             for (int i: record.args) {
                 fos.write(LittleEndianIntIO.leInt2ByteArray(i));
