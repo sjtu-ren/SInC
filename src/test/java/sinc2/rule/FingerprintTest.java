@@ -5,9 +5,12 @@ import org.junit.jupiter.api.Test;
 import sinc2.common.ArgIndicator;
 import sinc2.common.Argument;
 import sinc2.common.Predicate;
+import sinc2.kb.NumeratedKb;
 import sinc2.kb.NumerationMap;
 import sinc2.util.MultiSet;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -419,6 +422,59 @@ class FingerprintTest {
 
         assertTrue(fingerprint1.generalizationOf(fingerprint2));
         assertFalse(fingerprint2.generalizationOf(fingerprint1));
+    }
+
+    @Test
+    void testRules() {
+        String[] rule_strs = new String[]{
+                "family(?,X0,X1):-father(X0,X1),isMale(X1)",
+                "family(X1,?,X0):-father(?,X0),mother(X1,?),isMale(X0)",
+                "family(X1,X0,?):-father(X0,X2),mother(X1,?),isMale(X2)",
+                "family(X1,X0,X2):-father(X0,?),mother(X1,?),isMale(X2)",
+                "family(X1,X0,X2):-father(X0,X2),mother(X1,?)"
+        };
+        NumeratedKb kb = new NumeratedKb("test");
+        kb.mapName("family");
+        kb.mapName("father");
+        kb.mapName("mother");
+        kb.mapName("isMale");
+
+        Rule rule0 = new BareRule(kb.name2Num("family"), 3, new HashSet<>(), new HashMap<>());
+        rule0.cvt2Uvs2NewLv(kb.name2Num("father"), 2, 0, 0, 1);
+        rule0.cvt2Uvs2NewLv(kb.name2Num("isMale"), 1, 0, 0, 2);
+        rule0.cvt1Uv2ExtLv(1, 1, 1);
+        assertEquals(rule_strs[0], rule0.toDumpString(kb.getNumerationMap()));
+
+        Rule rule1 = new BareRule(kb.name2Num("family"), 3, new HashSet<>(), new HashMap<>());
+        rule1.cvt2Uvs2NewLv(kb.name2Num("father"), 2, 1, 0, 2);
+        rule1.cvt2Uvs2NewLv(kb.name2Num("mother"), 2, 0, 0, 0);
+        rule1.cvt1Uv2ExtLv(kb.name2Num("isMale"), 1, 0, 0);
+        assertEquals(rule_strs[1], rule1.toDumpString(kb.getNumerationMap()));
+
+        Rule rule2 = new BareRule(kb.name2Num("family"), 3, new HashSet<>(), new HashMap<>());
+        rule2.cvt2Uvs2NewLv(kb.name2Num("father"), 2, 0, 0, 1);
+        rule2.cvt2Uvs2NewLv(kb.name2Num("mother"), 2, 0, 0, 0);
+        rule2.cvt2Uvs2NewLv(kb.name2Num("isMale"), 1, 0, 1, 1);
+        assertEquals(rule_strs[2], rule2.toDumpString(kb.getNumerationMap()));
+
+        Rule rule3 = new BareRule(kb.name2Num("family"), 3, new HashSet<>(), new HashMap<>());
+        rule3.cvt2Uvs2NewLv(kb.name2Num("father"), 2, 0, 0, 1);
+        rule3.cvt2Uvs2NewLv(kb.name2Num("mother"), 2, 0, 0, 0);
+        rule3.cvt2Uvs2NewLv(kb.name2Num("isMale"), 1, 0, 0, 2);
+        assertEquals(rule_strs[3], rule3.toDumpString(kb.getNumerationMap()));
+
+        Rule rule4 = new BareRule(kb.name2Num("family"), 3, new HashSet<>(), new HashMap<>());
+        rule4.cvt2Uvs2NewLv(kb.name2Num("father"), 2, 0, 0, 1);
+        rule4.cvt2Uvs2NewLv(kb.name2Num("mother"), 2, 0, 0, 0);
+        rule4.cvt2Uvs2NewLv(0, 2, 1, 1);
+        assertEquals(rule_strs[4], rule4.toDumpString(kb.getNumerationMap()));
+
+        Rule[] rules = new Rule[]{rule0, rule1, rule2, rule3, rule4};
+        for (int i = 0; i < rules.length; i++) {
+            for (int j = i + 1; j < rules.length; j++) {
+                assertNotEquals(rules[i], rules[j]);
+            }
+        }
     }
 
     private String rule2String(List<Predicate> rule) {

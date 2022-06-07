@@ -214,7 +214,7 @@ public abstract class Rule {
 
     /**
      * Check if the rule structure is invalid. The structure is invalid if:
-     *   1. It contains duplicated predicates
+     *   1. It contains duplicated predicates Todo: Partial duplication with the head should not be defined as invalid.
      *   2. It contains independent Fragment
      */
     protected boolean isInvalid() {
@@ -897,6 +897,21 @@ public abstract class Rule {
             for (int i = 2; i < structure.size(); i++) {
                 builder.append(',');
                 builder.append(structure.get(i).toString(map));
+            }
+        }
+        return builder.toString();
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder("(");
+        builder.append(eval).append(')');
+        builder.append(structure.get(0).toString()).append(":-");
+        if (1 < structure.size()) {
+            builder.append(structure.get(1).toString());
+            for (int i = 2; i < structure.size(); i++) {
+                builder.append(',');
+                builder.append(structure.get(i).toString());
             }
         }
         return builder.toString();

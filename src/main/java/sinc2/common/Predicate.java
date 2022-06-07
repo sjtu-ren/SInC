@@ -60,6 +60,33 @@ public class Predicate {
         return result;
     }
 
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append(functor).append('(');
+        if (0 < args.length) {
+            if (Argument.isEmpty(args[0])) {
+                builder.append('?');
+            } else if (Argument.isVariable(args[0])) {
+                builder.append('X').append(Argument.decode(args[0]));
+            } else {
+                builder.append(Argument.decode(args[0]));
+            }
+            for (int i = 1; i < args.length; i++) {
+                builder.append(',');
+                if (Argument.isEmpty(args[i])) {
+                    builder.append('?');
+                } else if (Argument.isVariable(args[i])) {
+                    builder.append('X').append(Argument.decode(args[i]));
+                } else {
+                    builder.append(Argument.decode(args[i]));
+                }
+            }
+        }
+        builder.append(')');
+        return builder.toString();
+    }
+
     /**
      * Stringify the predicate to human readable format with the numeration map.
      */

@@ -61,7 +61,7 @@ public class GraphNode<T> {
      */
     @Override
     public int hashCode() {
-        return content.hashCode();
+        return Objects.hash(content);
     }
 
     @Override

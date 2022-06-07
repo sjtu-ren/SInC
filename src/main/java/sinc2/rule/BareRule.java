@@ -9,12 +9,31 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * A rule implementation with barely nothing but the structure and fingerprint operations. This class is used for testing
- * basic operations in the abstract class 'Rule' or for manipulating the rule structure only.
+ * A rule implementation with barely nothing but the structure and fingerprint operations. This class is used for loading
+ * Horn rules from strings. It can also be used for testing basic operations in the abstract class 'Rule' or for
+ * manipulating the rule structure only.
  *
  * @since 1.0
  */
 public class BareRule extends Rule {
+
+    public Eval returningEval = new Eval(null, 0, 0, length);
+    public double coverage = 1.0;
+    public UpdateStatus case1PreUpdateStatus = UpdateStatus.NORMAL;
+    public UpdateStatus case1PostUpdateStatus = UpdateStatus.NORMAL;
+    public UpdateStatus case2PreUpdateStatus = UpdateStatus.NORMAL;
+    public UpdateStatus case2PostUpdateStatus = UpdateStatus.NORMAL;
+    public UpdateStatus case3PreUpdateStatus = UpdateStatus.NORMAL;
+    public UpdateStatus case3PostUpdateStatus = UpdateStatus.NORMAL;
+    public UpdateStatus case4PreUpdateStatus = UpdateStatus.NORMAL;
+    public UpdateStatus case4PostUpdateStatus = UpdateStatus.NORMAL;
+    public UpdateStatus case5PreUpdateStatus = UpdateStatus.NORMAL;
+    public UpdateStatus case5PostUpdateStatus = UpdateStatus.NORMAL;
+    public UpdateStatus generalizationPreUpdateStatus = UpdateStatus.NORMAL;
+    public UpdateStatus generalizationPostUpdateStatus = UpdateStatus.NORMAL;
+    public Predicate[][] returningEvidence = new Predicate[0][];
+    public Set<Predicate> returningCounterexamples = new HashSet<>();
+
     public BareRule(int headFunctor, int arity, Set<Fingerprint> fingerprintCache, Map<MultiSet<Integer>, Set<Fingerprint>> category2TabuSetMap) {
         super(headFunctor, arity, fingerprintCache, category2TabuSetMap);
     }
@@ -34,81 +53,86 @@ public class BareRule extends Rule {
 
     @Override
     protected Eval calculateEval() {
-        return new Eval(null, 0, 0, length);
+        return returningEval;
+    }
+
+    @Override
+    public Eval getEval() {
+        return returningEval;
     }
 
     @Override
     protected double factCoverage() {
-        return 1.0;
+        return coverage;
     }
 
     @Override
     protected UpdateStatus cvt1Uv2ExtLvHandlerPreCvg(int predIdx, int argIdx, int varId) {
-        return UpdateStatus.NORMAL;
+        return case1PreUpdateStatus;
     }
 
     @Override
     protected UpdateStatus cvt1Uv2ExtLvHandlerPostCvg(int predIdx, int argIdx, int varId) {
-        return UpdateStatus.NORMAL;
+        return case1PostUpdateStatus;
     }
 
     @Override
     protected UpdateStatus cvt1Uv2ExtLvHandlerPreCvg(Predicate newPredicate, int argIdx, int varId) {
-        return UpdateStatus.NORMAL;
+        return case2PreUpdateStatus;
     }
 
     @Override
     protected UpdateStatus cvt1Uv2ExtLvHandlerPostCvg(Predicate newPredicate, int argIdx, int varId) {
-        return UpdateStatus.NORMAL;
+        return case2PostUpdateStatus;
     }
 
     @Override
     protected UpdateStatus cvt2Uvs2NewLvHandlerPreCvg(int predIdx1, int argIdx1, int predIdx2, int argIdx2) {
-        return UpdateStatus.NORMAL;
+        return case3PreUpdateStatus;
     }
 
     @Override
     protected UpdateStatus cvt2Uvs2NewLvHandlerPostCvg(int predIdx1, int argIdx1, int predIdx2, int argIdx2) {
-        return UpdateStatus.NORMAL;
+        return case3PostUpdateStatus;
     }
 
     @Override
     protected UpdateStatus cvt2Uvs2NewLvHandlerPreCvg(Predicate newPredicate, int argIdx1, int predIdx2, int argIdx2) {
-        return UpdateStatus.NORMAL;
+        return case4PreUpdateStatus;
     }
 
     @Override
     protected UpdateStatus cvt2Uvs2NewLvHandlerPostCvg(Predicate newPredicate, int argIdx1, int predIdx2, int argIdx2) {
-        return UpdateStatus.NORMAL;
+        return case4PostUpdateStatus;
     }
 
     @Override
     protected UpdateStatus cvt1Uv2ConstHandlerPreCvg(int predIdx, int argIdx, int constant) {
-        return UpdateStatus.NORMAL;
+        return case5PreUpdateStatus;
     }
 
     @Override
     protected UpdateStatus cvt1Uv2ConstHandlerPostCvg(int predIdx, int argIdx, int constant) {
-        return UpdateStatus.NORMAL;
+        return case5PostUpdateStatus;
     }
 
     @Override
     protected UpdateStatus rmAssignedArgHandlerPreCvg(int predIdx, int argIdx) {
-        return UpdateStatus.NORMAL;
+        return generalizationPreUpdateStatus;
     }
 
     @Override
     protected UpdateStatus rmAssignedArgHandlerPostCvg(int predIdx, int argIdx) {
-        return UpdateStatus.NORMAL;
+        return generalizationPostUpdateStatus;
     }
 
     @Override
     public Predicate[][] getEvidence() {
-        return new Predicate[0][];
+        return returningEvidence;
     }
 
     @Override
     public Set<Predicate> getCounterexamples() {
-        return new HashSet<>();
+        return returningCounterexamples;
     }
 }
