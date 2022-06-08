@@ -17,7 +17,7 @@ public class SincRecovery {
     protected final MemKB kb;
     protected final Set<Predicate> recoveredFacts = new HashSet<>();
 
-    static class PredicateCache {
+    protected static class PredicateCache {
         public final Predicate predicate;
         public Map<String, Set<Predicate>>[] indexedInclusion;
 
@@ -174,6 +174,9 @@ public class SincRecovery {
                     if (match_all) {
                         filtered_predicates.add(p);
                     }
+                }
+                if (filtered_predicates.isEmpty()) {
+                    return 0;
                 }
                 init_grounding.add(new PredicateCache(body_pred, buildArgIndices(filtered_predicates)));
             }
@@ -527,5 +530,25 @@ public class SincRecovery {
                 );
             }
         }
+    }
+
+    public Set<Predicate> getNecessaryFacts() {
+        return necessaryFacts;
+    }
+
+    public List<Rule> getHypothesis() {
+        return hypothesis;
+    }
+
+    public Set<Predicate> getCounterExamples() {
+        return counterExamples;
+    }
+
+    public Set<String> getConstants() {
+        return constants;
+    }
+
+    public MemKB getKb() {
+        return kb;
     }
 }

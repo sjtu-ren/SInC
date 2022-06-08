@@ -730,4 +730,8 @@ public abstract class Rule {
     public int hashCode() {
         return fingerPrint.hashCode();
     }
+
+    public void updateStructure() {
+        fingerPrint = new RuleFingerPrint(structure);
+    }
 }
