@@ -68,7 +68,7 @@ public class CompareQuery {
         DB_MAP.put(Dataset.NELL, NELL_DB);
     }
 
-    protected static final int REPEAT = 10;
+    protected static final int REPEAT = 100;
 
     public static void main(String[] args) {
         compareSelection();
@@ -160,8 +160,10 @@ public class CompareQuery {
     protected static void compareSelection() {
         System.out.println(">>> Test Select");
         for (Dataset dataset: DATASETS) {
-            long cost_on_original = 0;
-            long cost_on_minimized = 0;
+//            long cost_on_original = 0;
+//            long cost_on_minimized = 0;
+//            double[] ratios = new double[REPEAT];
+            double[] u_sec = new double[REPEAT];
             for (int i = 0; i < REPEAT; i++) {
                 /* Select an argument for selection */
                 MemKB original_kb = DB_MAP.get(dataset);
@@ -174,17 +176,31 @@ public class CompareQuery {
                 String value = original_kb.getAllFacts(functor).iterator().next().args[index].name;
 
                 /* Select in the original DB */
-                cost_on_original += selectOnOriginalDb(original_kb, functor, index, value);
+                long cost_on_original = selectOnOriginalDb(original_kb, functor, index, value);
 
                 /* Select in the minimized DB */
-                cost_on_minimized += selectOnMinimizedDb(minimized_kb, functor, index, value);;
+                long cost_on_minimized = selectOnMinimizedDb(minimized_kb, functor, index, value);
+
+//                ratios[i] = cost_on_original * 100.0 / cost_on_minimized;
+                u_sec[i] = cost_on_minimized / 1000.0;
             }
-            System.out.printf(
-                    "Test on [%s]:\t%d\t%d\t%.2f%%\n", dataset.getShortName(),
-                    cost_on_original, cost_on_minimized, cost_on_original * 100.0 / cost_on_minimized
-            );
+//            System.out.printf("Test on [%s]: %s\n", dataset.getShortName(), Arrays.toString(u_sec));
+            System.out.printf("Test on [%s]: %.2f\n", dataset.getShortName(), median(u_sec));
         }
         System.out.println();
+    }
+
+    private static double median(double[] array) {
+        if (0 == array.length) {
+            return 0;
+        }
+        Arrays.sort(array);
+        int idx = array.length / 2;
+        if (0 == array.length % 2) {
+            return (array[idx] + array[idx-1])/2;
+        } else {
+            return array[idx];
+        }
     }
 
     protected static void compareProduction() {
@@ -203,19 +219,22 @@ public class CompareQuery {
             int index1 = ThreadLocalRandom.current().nextInt(0, arity1);
             int index2 = ThreadLocalRandom.current().nextInt(0, arity2);
 
-            long cost_on_original = 0;
-            long cost_on_minimized = 0;
+//            long cost_on_original = 0;
+//            long cost_on_minimized = 0;
+//            double[] ratios = new double[REPEAT];
+            double[] u_sec = new double[REPEAT];
             for (int i = 0; i < REPEAT; i++) {
                 /* Select in the original DB */
-                cost_on_original += productOnOriginalDb(original_kb, functor1, index1, arity1, functor2, index2, arity2);
+                long cost_on_original = productOnOriginalDb(original_kb, functor1, index1, arity1, functor2, index2, arity2);
 
                 /* Select in the minimized DB */
-                cost_on_minimized += productOnMinimizedDb(minimized_kb, functor1, index1, arity1, functor2, index2, arity2);
+                long cost_on_minimized = productOnMinimizedDb(minimized_kb, functor1, index1, arity1, functor2, index2, arity2);
+
+//                ratios[i] = cost_on_original * 100.0 / cost_on_minimized;
+                u_sec[i] = cost_on_minimized / 1000.0;
             }
-            System.out.printf(
-                    "Test on [%s]:\t%d\t%d\t%.2f%%\n", dataset.getShortName(),
-                    cost_on_original, cost_on_minimized, cost_on_original * 100.0 / cost_on_minimized
-            );
+//            System.out.printf("Test on [%s]: %s\n", dataset.getShortName(), Arrays.toString(u_sec));
+            System.out.printf("Test on [%s]: %.2f\n", dataset.getShortName(), median(u_sec));
         }
     }
 
@@ -295,6 +314,7 @@ public class CompareQuery {
     protected static long productOnOriginalDb(
             MemKB DB, String functor1, int index1, int arity1, String functor2, int index2, int arity2
     ) {
+        long time_start = System.nanoTime();
         Set<Predicate> result = new HashSet<>();
         /* Build indices */
         Map<String, Set<Predicate>> table1 = new HashMap<>();
@@ -319,7 +339,6 @@ public class CompareQuery {
         }
 
         /* Do the product */
-        long time_start = System.nanoTime();
         final String new_functor = "product";
         final int new_arity = arity1 + arity2;
         for (Map.Entry<String, Set<Predicate>> entry: table1.entrySet()) {
@@ -353,6 +372,19 @@ public class CompareQuery {
                 rules2.add(rule);
             }
         }
+        Predicate head1 = new Predicate(functor1, arity1);
+        for (int i = 0; i < head1.arity(); i++) {
+            head1.args[i] = new Variable(i);
+        }
+        BareRule self_rule1 = new BareRule(List.of(head1, new Predicate(head1)), new HashSet<>());
+        Predicate head2 = new Predicate(functor2, arity2);
+        for (int i = 0; i < head2.arity(); i++) {
+            head2.args[i] = new Variable(i);
+        }
+        BareRule self_rule2 = new BareRule(List.of(head2, new Predicate(head2)), new HashSet<>());
+        rules1.add(self_rule1);
+        rules2.add(self_rule2);
+
         Set<Rule> program = new HashSet<>();
         for (Rule rule1: rules1) {
             for (Rule rule2: rules2) {
