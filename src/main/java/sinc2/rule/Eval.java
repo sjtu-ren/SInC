@@ -58,7 +58,7 @@ public class Eval {
     /**
      * Initialize a evaluation score.
      *
-     * @param previousEval The evaluation of the rule that is specialized to the rule of this evaluation
+     * @param previousEval The evaluation of the rule that is specialized to the rule of this evaluation Todo: this should be removed from the calculation
      * @param posEtls The total number of positive entailments
      * @param allEtls The total number of entailments
      * @param ruleLength The length of the rule

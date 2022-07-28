@@ -41,6 +41,9 @@ class RelationMinerTest {
         protected int checkThenAddRule(UpdateStatus updateStatus, Rule updatedRule, Rule originalRule, Rule[] candidates) throws InterruptedSignal {
             return super.checkThenAddRule(updateStatus, updatedRule, bad_rule, candidates);
         }
+
+        @Override
+        protected void selectAsBeam(Rule r) {}
     }
 
     /*

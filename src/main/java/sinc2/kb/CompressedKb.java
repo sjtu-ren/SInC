@@ -491,6 +491,10 @@ public class CompressedKb extends NumeratedKb {
         return counterexampleRelationMap.values();
     }
 
+    public KbRelation getCounterexampleRelation(int relNum) {
+        return counterexampleRelationMap.get(relNum);
+    }
+
     public int totalNecessaryRecords() {
         return totalRecords();
     }

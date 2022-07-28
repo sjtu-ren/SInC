@@ -7,6 +7,7 @@ import sinc2.common.Predicate;
 import sinc2.kb.KbException;
 import sinc2.kb.KbRelation;
 import sinc2.kb.NumeratedKb;
+import sinc2.kb.Record;
 import sinc2.rule.*;
 import sinc2.util.MultiSet;
 import sinc2.util.graph.GraphNode;
@@ -37,7 +38,7 @@ public abstract class RelationMiner {
     /** The hypothesis set, i.e., a list of rules */
     protected final List<Rule> hypothesis = new ArrayList<>();
     /** The set of counterexamples */
-    protected final Set<Predicate> counterexamples = new HashSet<>();
+    protected final Set<Record> counterexamples = new HashSet<>();
     /** The tabu set */
     protected final Map<MultiSet<Integer>, Set<Fingerprint>> tabuSet = new HashMap<>();
 
@@ -81,7 +82,6 @@ public abstract class RelationMiner {
      * The rule mining procedure that finds a single rule in the target relation.
      *
      * @return The rule that can be used to compress the target relation. NULL if no proper rule can be found.
-     * @throws InterruptedSignal Thrown when the workflow should be interrupted
      */
     protected Rule findRule() {
         /* Create the beams */
@@ -96,6 +96,7 @@ public abstract class RelationMiner {
             try {
                 for (int i = 0; i < beamwidth && null != beams[i]; i++) {
                     Rule r = beams[i];
+                    selectAsBeam(r);
                     logger.printf("Extend: %s\n", r);
                     logger.flush();
 
@@ -124,7 +125,7 @@ public abstract class RelationMiner {
                         best_rule = best_candidates[i];
                     }
                 }
-                return best_rule.getEval().useful() ? best_rule : null;
+                return (null != best_rule) ? (best_rule.getEval().useful() ? best_rule : null) : null;
             }
 
             /* Find the best candidate */
@@ -326,6 +327,12 @@ public abstract class RelationMiner {
     }
 
     /**
+     * Select rule r as one of the beams in the next iteration of rule mining. Shared operations for beams may be added
+     * in this method, e.g., updating the cache indices.
+     */
+    abstract protected void selectAsBeam(Rule r);
+
+    /**
      * Find the positive and negative entailments of the rule. Label the positive entailments and add the negative ones
      * to the counterexample set. Evidence for the positive entailments are also needed to update the dependency graph.
      *
@@ -333,13 +340,14 @@ public abstract class RelationMiner {
      */
     protected void updateKbAndDependencyGraph(Rule rule) throws KbException {
         counterexamples.addAll(rule.getCounterexamples());
-        Predicate[][] evidences = rule.getEvidence();
-        for (Predicate[] grounding: evidences) {
-            final Predicate head_pred = grounding[Rule.HEAD_PRED_IDX];
+        EvidenceBatch evidence_batch = rule.getEvidenceAndMarkEntailment();
+        for (int[][] grounding: evidence_batch.evidenceList) {
+            final Predicate head_pred = new Predicate(
+                    evidence_batch.relationsInRule[Rule.HEAD_PRED_IDX], grounding[Rule.HEAD_PRED_IDX]
+            );
             final GraphNode<Predicate> head_node = predicate2NodeMap.computeIfAbsent(
                     head_pred, k -> new GraphNode<>(head_pred)
             );
-            kb.setAsEntailed(head_pred.functor, head_pred.args);
             dependencyGraph.compute(head_node, (h, dependencies) -> {
                 if (null == dependencies) {
                     dependencies = new HashSet<>();
@@ -349,7 +357,9 @@ public abstract class RelationMiner {
                     dependencies.add(SInC.AXIOM_NODE);
                 } else {
                     for (int pred_idx = Rule.FIRST_BODY_PRED_IDX; pred_idx < grounding.length; pred_idx++) {
-                        final Predicate body_pred = grounding[pred_idx];
+                        final Predicate body_pred = new Predicate(
+                                evidence_batch.relationsInRule[pred_idx], grounding[pred_idx]
+                        );
                         final GraphNode<Predicate> body_node = predicate2NodeMap.computeIfAbsent(
                                 body_pred, kk -> new GraphNode<>(body_pred)
                         );
@@ -373,5 +383,13 @@ public abstract class RelationMiner {
             hypothesis.add(rule);
             updateKbAndDependencyGraph(rule);
         }
+    }
+
+    public Set<Record> getCounterexamples() {
+        return counterexamples;
+    }
+
+    public List<Rule> getHypothesis() {
+        return hypothesis;
     }
 }

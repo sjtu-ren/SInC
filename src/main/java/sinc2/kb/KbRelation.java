@@ -368,4 +368,8 @@ public class KbRelation implements Iterable<Record> {
     public int totalRecords() {
         return records.size();
     }
+
+    public Map<Integer, Set<Record>>[] getArgumentIndices() {
+        return argumentIndices;
+    }
 }

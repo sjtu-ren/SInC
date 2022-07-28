@@ -1,6 +1,7 @@
 package sinc2.rule;
 
 import sinc2.common.Predicate;
+import sinc2.kb.Record;
 import sinc2.util.MultiSet;
 
 import java.util.HashSet;
@@ -31,15 +32,21 @@ public class BareRule extends Rule {
     public UpdateStatus case5PostUpdateStatus = UpdateStatus.NORMAL;
     public UpdateStatus generalizationPreUpdateStatus = UpdateStatus.NORMAL;
     public UpdateStatus generalizationPostUpdateStatus = UpdateStatus.NORMAL;
-    public Predicate[][] returningEvidence = new Predicate[0][];
-    public Set<Predicate> returningCounterexamples = new HashSet<>();
+    public EvidenceBatch returningEvidence = null;
+    public Set<Record> returningCounterexamples = new HashSet<>();
 
     public BareRule(int headFunctor, int arity, Set<Fingerprint> fingerprintCache, Map<MultiSet<Integer>, Set<Fingerprint>> category2TabuSetMap) {
         super(headFunctor, arity, fingerprintCache, category2TabuSetMap);
+        returningEvidence = new EvidenceBatch(new int[]{headFunctor});
     }
 
     public BareRule(List<Predicate> structure, Set<Fingerprint> fingerprintCache, Map<MultiSet<Integer>, Set<Fingerprint>> category2TabuSetMap) {
         super(structure, fingerprintCache, category2TabuSetMap);
+        final int[] relations_in_rule = new int[structure.size()];
+        for (int i = 0; i < relations_in_rule.length; i++) {
+            relations_in_rule[i] = structure.get(i).functor;
+        }
+        returningEvidence = new EvidenceBatch(relations_in_rule);
     }
 
     public BareRule(Rule another) {
@@ -62,7 +69,7 @@ public class BareRule extends Rule {
     }
 
     @Override
-    protected double factCoverage() {
+    protected double recordCoverage() {
         return coverage;
     }
 
@@ -127,12 +134,12 @@ public class BareRule extends Rule {
     }
 
     @Override
-    public Predicate[][] getEvidence() {
+    public EvidenceBatch getEvidenceAndMarkEntailment() {
         return returningEvidence;
     }
 
     @Override
-    public Set<Predicate> getCounterexamples() {
+    public Set<Record> getCounterexamples() {
         return returningCounterexamples;
     }
 }

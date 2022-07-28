@@ -92,7 +92,7 @@ public abstract class SInC {
 
     /**
      * The relations that will be the targets of rule mining procedures. By default, all relations are the targets.
-     * This function can be override to customize the target list.
+     * This function can be overridden to customize the target list.
      */
     protected List<Integer> getTargetRelations() {
         List<Integer> relations = new ArrayList<>();
@@ -180,6 +180,11 @@ public abstract class SInC {
             for (Integer relation_num: target_relations) {
                 RelationMiner relation_miner = createRelationMiner(relation_num);
                 relation_miner.run();
+                KbRelation ce_relation = compressedKb.getCounterexampleRelation(relation_num);
+                ce_relation.addRecords(relation_miner.getCounterexamples());
+                for (Rule r: relation_miner.getHypothesis()) {
+                    compressedKb.addHypothesisRule(r);
+                }
             }
         } catch (KbException e) {
             e.printStackTrace(logger);
