@@ -2,6 +2,8 @@ package sinc2.impl.base;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import sinc2.common.Argument;
+import sinc2.common.Predicate;
 import sinc2.kb.Record;
 import sinc2.rule.*;
 import sinc2.util.ComparableArray;
@@ -1292,5 +1294,140 @@ class CachedRuleTest {
         assertTrue(kb.recordIsEntailed(h, h1.args));
         assertTrue(kb.recordIsEntailed(h, h2.args));
         assertFalse(kb.recordIsEntailed(h, h3.args));
+    }
+
+    @Test
+    void testStructureConstructor1() throws KbException {
+        /* h(X, Y, X, ?, a, ?) :- p(Y, Z, Z) */
+        NumeratedKb kb = new NumeratedKb("test");
+        int h = kb.createRelation("h", 6).getNumeration();
+        int p = kb.createRelation("p", 3).getNumeration();
+        int a = kb.mapName("a");
+        int b = kb.mapName("b");
+        int c = kb.mapName("c");
+        int d = kb.mapName("d");
+        int e = kb.mapName("e");
+        Record h1 = new Record(new int[]{a, a, b, a, a, a});
+        Record h2 = new Record(new int[]{b, b, b, c, a, e});//
+        Record h3 = new Record(new int[]{c, d, c, c, a, d});//
+        Record h4 = new Record(new int[]{d, d, d, d, d, d});
+        Record h5 = new Record(new int[]{e, a, a, d, d, d});
+        kb.addRecords(h, new Record[]{h1, h2, h3, h4, h5});
+        Record p1 = new Record(new int[]{a, b, b});
+        Record p2 = new Record(new int[]{a, c, d});
+        Record p3 = new Record(new int[]{c, c, c});
+        Record p4 = new Record(new int[]{b, d, d});//
+        Record p5 = new Record(new int[]{e, a, a});
+        Record p6 = new Record(new int[]{e, b, c});
+        kb.addRecords(p, new Record[]{p1, p2, p3, p4, p5, p6});
+
+        /* Construct */
+        CachedRule rule = new CachedRule(new ArrayList<>(List.of(
+                new Predicate(h, new int[]{
+                        Argument.variable(0), Argument.variable(1), Argument.variable(0),
+                        Argument.EMPTY_VALUE, Argument.constant(a), Argument.EMPTY_VALUE
+                }),
+                new Predicate(p, new int[]{
+                        Argument.variable(1), Argument.variable(2), Argument.variable(2)
+                }))),
+                new HashSet<>(), new HashMap<>(), kb
+        );
+        assertEquals("h(X0,X1,X0,?,a,?):-p(X1,X2,X2)", rule.toDumpString(kb.getNumerationMap()));
+        assertEquals(new Eval(null, 1, 4 * 5 * 5 * 5, 4), rule.getEval());
+        assertEquals(3, rule.usedLimitedVars());
+        assertEquals(4, rule.length());
+        final Set<ComparableArray<Record>> expected_grounding_set = new HashSet<>();
+        expected_grounding_set.add(new ComparableArray<>(new Record[]{h2, p4}));
+        checkEvidence(rule.getEvidenceAndMarkEntailment(), new int[]{h, p}, new Set[]{expected_grounding_set});
+        Set<Record> expected_counter_example_set = new HashSet<>();
+        for (int arg1: kb.getAllConstants()) {
+            for (int arg2: new int[]{a, b, c, e}) {
+                for (int arg4: kb.getAllConstants()) {
+                    for (int arg6: kb.getAllConstants()) {
+                        expected_counter_example_set.add(new Record(new int[]{arg1, arg2, arg1, arg4, a, arg6}));
+                    }
+                }
+            }
+        }
+        expected_counter_example_set.remove(h2);
+        assertEquals(expected_counter_example_set, rule.getCounterexamples());
+        assertTrue(kb.recordIsEntailed(h, h2.args));
+    }
+
+    @Test
+    void testStructureConstructor2() throws KbException {
+        /* h(?, X, X, ?) :- p(a, X, ?), q(X, ?, X), s(a), r(X) */
+        NumeratedKb kb = new NumeratedKb("test");
+        int h = kb.createRelation("h", 4).getNumeration();
+        int p = kb.createRelation("p", 3).getNumeration();
+        int q = kb.createRelation("q", 3).getNumeration();
+        int r = kb.createRelation("r", 1).getNumeration();
+        int s = kb.createRelation("s", 1).getNumeration();
+        int a = kb.mapName("a");
+        int b = kb.mapName("b");
+        int c = kb.mapName("c");
+        int d = kb.mapName("d");
+        int e = kb.mapName("e");
+        Record h1 = new Record(new int[]{a, b, c, d});
+        Record h2 = new Record(new int[]{a, c, c, d});//c
+        Record h3 = new Record(new int[]{d, e, e, a});//e
+        Record h4 = new Record(new int[]{b, b, b, b});//b
+        kb.addRecords(h, new Record[]{h1, h2, h3, h4});
+        Record p1 = new Record(new int[]{a, b, b});//b
+        Record p2 = new Record(new int[]{a, c, d});//c
+        Record p3 = new Record(new int[]{c, c, c});
+        Record p4 = new Record(new int[]{b, d, d});
+        Record p5 = new Record(new int[]{e, a, a});
+        Record p6 = new Record(new int[]{a, b, c});//b
+        kb.addRecords(p, new Record[]{p1, p2, p3, p4, p5, p6});
+        Record q1 = new Record(new int[]{b, a, b});//b
+        Record q2 = new Record(new int[]{b, c, d});//b
+        Record q3 = new Record(new int[]{c, e, c});//c
+        Record q4 = new Record(new int[]{a, b, c});
+        Record q5 = new Record(new int[]{c, d, e});
+        kb.addRecords(q, new Record[]{q1, q2, q3, q4, q5});
+        Record r1 = new Record(new int[]{a});
+        Record r2 = new Record(new int[]{b});
+        Record r3 = new Record(new int[]{d});
+        kb.addRecords(r, new Record[]{r1, r2, r3});
+        Record s1 = new Record(new int[]{a});
+        Record s2 = new Record(new int[]{b});
+        kb.addRecords(s, new Record[]{s1, s2});
+
+        /* Construct */
+        CachedRule rule = new CachedRule(new ArrayList<>(List.of(
+                new Predicate(h, new int[]{
+                        Argument.EMPTY_VALUE, Argument.variable(0), Argument.variable(0), Argument.EMPTY_VALUE
+                }),
+                new Predicate(p, new int[]{
+                        Argument.constant(a), Argument.variable(0), Argument.EMPTY_VALUE
+                }),
+                new Predicate(q, new int[]{
+                        Argument.variable(0), Argument.EMPTY_VALUE, Argument.variable(0)
+                }),
+                new Predicate(s, new int[]{Argument.constant(a)}),
+                new Predicate(r, new int[]{Argument.variable(0)}))),
+                new HashSet<>(), new HashMap<>(), kb
+        );
+        assertEquals("h(?,X0,X0,?):-p(a,X0,?),q(X0,?,X0),s(a),r(X0)", rule.toDumpString(kb.getNumerationMap()));
+        assertEquals(new Eval(null, 1, 1 * 5 * 5, 7), rule.getEval());
+        assertEquals(1, rule.usedLimitedVars());
+        assertEquals(7, rule.length());
+        final Set<ComparableArray<Record>> expected_grounding_set1 = new HashSet<>();
+        expected_grounding_set1.add(new ComparableArray<>(new Record[]{h4, p1, q1, s1, r2}));
+        final Set<ComparableArray<Record>> expected_grounding_set2 = new HashSet<>();
+        expected_grounding_set2.add(new ComparableArray<>(new Record[]{h4, p1, q2, s1, r2}));
+        checkEvidence(rule.getEvidenceAndMarkEntailment(), new int[]{h, p, q, s, r}, new Set[]{expected_grounding_set1, expected_grounding_set2});
+        Set<Record> expected_counter_example_set = new HashSet<>();
+        for (int arg1: kb.getAllConstants()) {
+            for (int arg2: new int[]{b}) {
+                for (int arg4: kb.getAllConstants()) {
+                    expected_counter_example_set.add(new Record(new int[]{arg1, arg2, arg2, arg4}));
+                }
+            }
+        }
+        expected_counter_example_set.remove(h4);
+        assertEquals(expected_counter_example_set, rule.getCounterexamples());
+        assertTrue(kb.recordIsEntailed(h, h4.args));
     }
 }

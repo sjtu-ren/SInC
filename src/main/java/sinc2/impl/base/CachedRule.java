@@ -224,16 +224,22 @@ public class CachedRule extends Rule {
         init_entry_without_head.entry.set(HEAD_PRED_IDX, null);
         init_entry_without_head.argIndicesList.set(HEAD_PRED_IDX, new Map[0]);
         allCache.add(init_entry_without_head);
-        for (int vid = 0; vid < lv_id_locs_without_head.length && null != lv_id_locs_without_head[vid]; vid++) {
-            allCache = splitCacheEntriesByLvs(allCache, lv_id_locs_without_head[vid]);
+        for (int vid = 0; vid < lv_id_locs_without_head.length; vid++) {
+            if (null != lv_id_locs_without_head[vid]) {
+                allCache = splitCacheEntriesByLvs(allCache, lv_id_locs_without_head[vid]);
+            }
         }
 
         /* Build "posCache" */
         /* Todo: the "posCache" can be built based on the result of "allCache" but the implementation is to complicated. Optimize in a future enhancement. */
         posCache.add(complete_init_entry);
-        for (int vid = 0; vid < lv_id_locs_with_head.length && null != lv_id_locs_with_head[vid]; vid++) {
-            posCache = splitCacheEntriesByLvs(posCache, lv_id_locs_with_head[vid]);
+        for (int vid = 0; vid < lv_id_locs_with_head.length; vid++) {
+            if (null != lv_id_locs_with_head[vid]) {
+                posCache = splitCacheEntriesByLvs(posCache, lv_id_locs_with_head[vid]);
+            }
         }
+
+        this.eval = calculateEval();
     }
 
     /**
@@ -322,14 +328,16 @@ public class CachedRule extends Rule {
             /* Split cache entries via shared values */
             for (Integer shared_arg: shared_args) {
                 CacheEntry new_entry = new CacheEntry(cache_entry);
-                for (int pred_idx = HEAD_PRED_IDX; pred_idx < structure.size() && null != lv_indices[pred_idx]; pred_idx++) {
-                    CompliedBlock cb = cache_entry.entry.get(pred_idx);
-                    CompliedBlock new_cb = new CompliedBlock(cb.relNum, cb.partAsgnRecord.clone(), lv_indices[pred_idx].get(shared_arg));
-                    for (int arg_idx: lv_locs_in_preds[pred_idx]) {
-                        new_cb.partAsgnRecord[arg_idx] = shared_arg;
+                for (int pred_idx = HEAD_PRED_IDX; pred_idx < structure.size(); pred_idx++) {
+                    if (null != lv_indices[pred_idx]) {
+                        CompliedBlock cb = cache_entry.entry.get(pred_idx);
+                        CompliedBlock new_cb = new CompliedBlock(cb.relNum, cb.partAsgnRecord.clone(), lv_indices[pred_idx].get(shared_arg));
+                        for (int arg_idx : lv_locs_in_preds[pred_idx]) {
+                            new_cb.partAsgnRecord[arg_idx] = shared_arg;
+                        }
+                        new_entry.entry.set(pred_idx, new_cb);
+                        new_entry.argIndicesList.set(pred_idx, null);
                     }
-                    new_entry.entry.set(pred_idx, new_cb);
-                    new_entry.argIndicesList.set(pred_idx, null);
                 }
                 new_cache.add(new_entry);
             }
