@@ -60,13 +60,13 @@ public class Main {
         PrintWriter logger = new PrintWriter(System.out);
         /* load kb */
         try {
-            kb = new NumeratedKb("hhh", "./path");
+            kb = new NumeratedKb("yago1", "../KBRedundancies/2-Open-domainExtraction/data/yago1");
         } catch (KbException | IOException e) {
             e.printStackTrace(logger);
             logger.println("[ERROR] KB Load failed, abort.");
             return;
         }
-        compressedKb = new CompressedKb("new", kb);
+        compressedKb = new CompressedKb("newYago1", kb);
         // get target relations
         List<Integer> relations = new ArrayList<>();
         for (KbRelation relation: kb.getRelations()) {
@@ -137,7 +137,7 @@ public class Main {
 
         /* Dump the compressed KB */
         try {
-            compressedKb.dump("../compressedYago");
+            compressedKb.dump("../compressedYago1");
         } catch (IOException e) {
             e.printStackTrace(logger);
             logger.println("[ERROR] Compressed KB dump failed. Abort.");
