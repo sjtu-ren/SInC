@@ -88,7 +88,11 @@ public abstract class SInC {
     /**
      * Load a KB (in the format of Numerated KB) and return the KB
      */
-    abstract protected NumeratedKb loadKb() throws KbException, IOException;
+    protected NumeratedKb loadKb() throws KbException, IOException {
+        NumeratedKb kb =  new NumeratedKb(config.kbName, config.basePath);
+        kb.updatePromisingConstants();
+        return kb;
+    }
 
     /**
      * The relations that will be the targets of rule mining procedures. By default, all relations are the targets.
@@ -241,6 +245,7 @@ public abstract class SInC {
      * Run the compression and an interruption daemon.
      */
     public final void run() {
+        interrupted = false;
         Thread task = new Thread(this::compress);
         task.start();
 

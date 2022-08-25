@@ -97,7 +97,7 @@ public abstract class RelationMiner {
                 for (int i = 0; i < beamwidth && null != beams[i]; i++) {
                     Rule r = beams[i];
                     selectAsBeam(r);
-                    logger.printf("Extend: %s\n", r);
+                    logger.printf("Extend: %s\n", r.toDumpString(kb.getNumerationMap()));
                     logger.flush();
 
                     /* Find the specializations and generalizations of rule 'r' */
@@ -379,7 +379,7 @@ public abstract class RelationMiner {
     public void run() throws KbException {
         Rule rule;
         while (!SInC.interrupted && (null != (rule = findRule()))) {
-            logger.printf("Found: %s\n", rule);
+            logger.printf("Found: %s\n", rule.toDumpString(kb.getNumerationMap()));
             hypothesis.add(rule);
             updateKbAndDependencyGraph(rule);
         }

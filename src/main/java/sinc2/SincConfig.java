@@ -11,13 +11,13 @@ import sinc2.rule.EvalMetric;
 public class SincConfig {
     /* I/O configurations */
     /** The path to the directory where the kb is located */
-    protected final String basePath;
+    public final String basePath;
     /** The name of the KB */
-    protected final String kbName;
+    public final String kbName;
     /** The path where the compressed KB should be stored */
-    protected final String dumpPath;
+    public final String dumpPath;
     /** The name of the dumped KB */
-    protected final String dumpName;
+    public final String dumpName;
 
     /* Runtime Config */
     /** The number of threads used to run SInC Todo: Implement multi-thread strategy */
