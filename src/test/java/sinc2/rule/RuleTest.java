@@ -6,13 +6,14 @@ import sinc2.common.Argument;
 import sinc2.common.ParsedArg;
 import sinc2.common.ParsedPred;
 import sinc2.common.Predicate;
+import sinc2.impl.base.CachedRule;
+import sinc2.kb.KbException;
+import sinc2.kb.KbRelation;
+import sinc2.kb.NumeratedKb;
 import sinc2.kb.NumerationMap;
 import sinc2.util.MultiSet;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -321,15 +322,15 @@ class RuleTest {
     }
 
     @Test
-    void testParseStructure1() {
-        /* p(X, ?, Y) :- */
-        String str = "p(X0,?,X1):-";
-        ParsedPred head = new ParsedPred("p", new ParsedArg[]{ParsedArg.variable(0), null, ParsedArg.variable(1)});
+    void testParseStructure1() throws RuleParseException {
+        /* p(X, ?, X) :- */
+        String str = "p(X0,?,X0):-";
+        ParsedPred head = new ParsedPred("p", new ParsedArg[]{ParsedArg.variable(0), null, ParsedArg.variable(0)});
         assertArrayEquals(new ParsedPred[]{head}, Rule.parseStructure(str).toArray(new ParsedPred[0]));
     }
 
     @Test
-    void testParseStructure2() {
+    void testParseStructure2() throws RuleParseException {
         /* pred(X, tom, X) :- body(Y), another(X, ?, Y) */
         String str = "pred(X0,tom,X0):-body(X1),another(X0,?,X1)";
         ParsedPred head = new ParsedPred("pred", new ParsedArg[]{
@@ -340,5 +341,112 @@ class RuleTest {
                 ParsedArg.variable(0), null, ParsedArg.variable(1)}
         );
         assertArrayEquals(new ParsedPred[]{head, body1, body2}, Rule.parseStructure(str).toArray(new ParsedPred[0]));
+    }
+
+    @Test
+    void testParseStructure3() throws RuleParseException {
+        /* compound(Na, H, C, O3) :- compound(Na, C, O3), compound(H2, O), compound(C, O2) */
+        /*          0   1  2  3               0   2  3             4   5            2  6   */
+        /*          0   -  2  3               0   2  3             -   -            2  -   */
+        /*          0   -  2  1               0   2  1             -   -            2  -   */
+        String str = "compound(Na,H,C,O3):-compound(Na,C,O3),compound(H2,O),compound(C,O2)";
+        ParsedPred head = new ParsedPred("compound", new ParsedArg[]{
+                ParsedArg.variable(0), null, ParsedArg.variable(2), ParsedArg.variable(1)
+        });
+        ParsedPred body1 = new ParsedPred("compound", new ParsedArg[]{
+                ParsedArg.variable(0), ParsedArg.variable(2), ParsedArg.variable(1)
+        });
+        ParsedPred body2 = new ParsedPred("compound", new ParsedArg[]{
+                null, null
+        });
+        ParsedPred body3 = new ParsedPred("compound", new ParsedArg[]{
+                ParsedArg.variable(2), null,
+        });
+        assertArrayEquals(new ParsedPred[]{head, body1, body2, body3}, Rule.parseStructure(str).toArray(new ParsedPred[0]));
+    }
+
+    @Test
+    void testParseSpecOprs1() throws RuleParseException, KbException {
+        /* head(X, tom, X) :- */
+        checkSpecOprEquivalence(Rule.parseStructure("head(X,tom,X):-"));
+    }
+
+    @Test
+    void testParseSpecOprs2() throws RuleParseException, KbException  {
+        /* head(X, Z) :- p(X, Y), q(Y, Z) */
+        checkSpecOprEquivalence(Rule.parseStructure("head(X,Z):-p(X,Y),q(Y,Z)"));
+    }
+
+    @Test
+    void testParseSpecOprs3() throws RuleParseException, KbException  {
+        /* head(X, Z) :- p(X, Y), p(Y, Z) */
+        checkSpecOprEquivalence(Rule.parseStructure("head(X, Z) :- p(X, Y), p(Y, Z)"));
+    }
+
+    @Test
+    void testParseSpecOprs4() throws RuleParseException, KbException  {
+        /* pred(X, tom, X, jerry) :- body(Y, alice), another(bob, X, ?, Y, catherine) */
+        checkSpecOprEquivalence(Rule.parseStructure("pred(X, tom, X, jerry) :- body(Y, alice), another(bob, X, ?, Y, catherine)"));
+    }
+
+    @Test
+    void testParseSpecOprs5() throws RuleParseException, KbException  {
+        /* head(X, Y, ?) :- p(Y, W, R), q(?, X, Z), q(Z, R), r(W) */
+        checkSpecOprEquivalence(Rule.parseStructure("head(X, Y, ?) :- p(Y, W, R), q(?, X, Z), q(Z, R), r(W)"));
+    }
+
+    void checkSpecOprEquivalence(List<ParsedPred> structure) throws RuleParseException, KbException {
+        /* Map constant and predicate symbols */
+        NumeratedKb kb = new NumeratedKb("test");
+        List<Predicate> numed_structure = new ArrayList<>();
+        for (ParsedPred predicate: structure) {
+            if (null == kb.getRelation(predicate.functor)) {
+                kb.createRelation(predicate.functor, predicate.args.length);
+            }
+            Predicate num_predicate = new Predicate(kb.name2Num(predicate.functor), predicate.args.length);
+            for (int arg_idx = 0; arg_idx < predicate.args.length; arg_idx++) {
+                ParsedArg argument = predicate.args[arg_idx];
+                if (null == argument) {
+                    num_predicate.args[arg_idx] = Argument.EMPTY_VALUE;
+                } else if (null != argument.name) {
+                    num_predicate.args[arg_idx] = Argument.constant(kb.mapName(argument.name));
+                } else {
+                    num_predicate.args[arg_idx] = Argument.variable(argument.id);
+                }
+            }
+            numed_structure.add(num_predicate);
+        }
+
+        /* Construct the rule by operations */
+        List<ParsedSpecOpr> operations = Rule.parseConstruction(structure);
+        KbRelation head_relation = kb.getRelation(structure.get(0).functor);
+        Rule.MIN_FACT_COVERAGE = -1;
+        BareRule rule = new BareRule(head_relation.getNumeration(), head_relation.getArity(), new HashSet<>(), new HashMap<>());
+        for (ParsedSpecOpr opr: operations) {
+            switch (opr.getSpecCase()) {
+                case CASE1:
+                    ParsedSpecOprCase1 opr_case1 = (ParsedSpecOprCase1) opr;
+                    rule.cvt1Uv2ExtLv(opr_case1.predIdx, opr_case1.argIdx, opr_case1.varId);
+                    break;
+                case CASE2:
+                    ParsedSpecOprCase2 opr_case2 = (ParsedSpecOprCase2) opr;
+                    rule.cvt1Uv2ExtLv(kb.name2Num(opr_case2.functor), opr_case2.arity, opr_case2.argIdx, opr_case2.varId);
+                    break;
+                case CASE3:
+                    ParsedSpecOprCase3 opr_case3 = (ParsedSpecOprCase3) opr;
+                    rule.cvt2Uvs2NewLv(opr_case3.predIdx1, opr_case3.argIdx1, opr_case3.predIdx2, opr_case3.argIdx2);
+                    break;
+                case CASE4:
+                    ParsedSpecOprCase4 opr_case4 = (ParsedSpecOprCase4) opr;
+                    rule.cvt2Uvs2NewLv(kb.name2Num(opr_case4.functor), opr_case4.arity, opr_case4.argIdx1, opr_case4.predIdx2, opr_case4.argIdx2);
+                    break;
+                case CASE5:
+                    ParsedSpecOprCase5 opr_case5 = (ParsedSpecOprCase5) opr;
+                    rule.cvt1Uv2Const(opr_case5.predIdx, opr_case5.argIdx, kb.name2Num(opr_case5.constant));
+                    break;
+            }
+        }
+
+        assertEquals(new Fingerprint(numed_structure), rule.fingerprint);
     }
 }

@@ -7,6 +7,7 @@ import sinc2.common.Argument;
 import sinc2.common.Predicate;
 import sinc2.rule.BareRule;
 import sinc2.rule.Rule;
+import sinc2.rule.RuleParseException;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -88,7 +89,7 @@ class CompressedKbTest {
     }
 
     @Test
-    void testLoad() throws IOException, KbException {
+    void testLoad() throws IOException, KbException, RuleParseException {
         NumeratedKb kb = new NumeratedKb(testKbManager.getKbName(), TestKbManager.MEM_DIR, true);
         CompressedKb ckb = new CompressedKb(testKbManager.getCkbName(), TestKbManager.MEM_DIR, kb);
 
@@ -101,7 +102,7 @@ class CompressedKbTest {
     }
 
     @Test
-    void testDump() throws IOException, KbException {
+    void testDump() throws IOException, KbException, RuleParseException {
         NumeratedKb kb = new NumeratedKb(testKbManager.getKbName(), TestKbManager.MEM_DIR, true);
         CompressedKb ckb = new CompressedKb(testKbManager.getCkbName(), TestKbManager.MEM_DIR, kb, true);
         String tmp_dir_path = testKbManager.createTmpDir();
@@ -117,7 +118,7 @@ class CompressedKbTest {
     }
 
     @Test
-    void testAddWithRemove() throws IOException, KbException {
+    void testAddWithRemove() throws IOException, KbException, RuleParseException {
         NumeratedKb kb = new NumeratedKb(testKbManager.getKbName(), TestKbManager.MEM_DIR, true);
         CompressedKb ckb = new CompressedKb(testKbManager.getCkbName(), TestKbManager.MEM_DIR, kb, true);
 

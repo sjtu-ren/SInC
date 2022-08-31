@@ -6,6 +6,7 @@ import sinc2.common.ParsedPred;
 import sinc2.common.Predicate;
 import sinc2.rule.BareRule;
 import sinc2.rule.Rule;
+import sinc2.rule.RuleParseException;
 import sinc2.util.LittleEndianIntIO;
 
 import java.io.*;
@@ -83,8 +84,9 @@ public class CompressedKb extends NumeratedKb {
      *
      * @throws IOException When file I/O errors occur
      * @throws KbException When the record check fails
+     * @throws RuleParseException When a hypothesis rule parsing failed
      */
-    public CompressedKb(String name, String basePath, NumeratedKb originalKb) throws IOException, KbException {
+    public CompressedKb(String name, String basePath, NumeratedKb originalKb) throws IOException, KbException, RuleParseException {
         super(name, basePath);
         this.originalKb = originalKb;
         /* Create relations */
@@ -116,9 +118,10 @@ public class CompressedKb extends NumeratedKb {
      *
      * @throws IOException When file I/O errors occur
      * @throws KbException When the record check fails
+     * @throws RuleParseException When a hypothesis rule parsing failed
      */
     public CompressedKb(String name, String basePath, NumeratedKb originalKb, boolean check)
-            throws IOException, KbException {
+            throws IOException, KbException, RuleParseException {
         super(name, basePath, check);
         this.originalKb = originalKb;
         /* Create relations */
@@ -148,8 +151,9 @@ public class CompressedKb extends NumeratedKb {
      * @param check Whether the constants are checked when loaded
      * @throws IOException When file I/O errors occur
      * @throws KbException When a relation shows different arity
+     * @throws RuleParseException When a hypothesis rule parsing failed
      */
-    protected void loadHypothesisHandler(File kbDir, boolean check) throws IOException, KbException {
+    protected void loadHypothesisHandler(File kbDir, boolean check) throws IOException, KbException, RuleParseException {
         File hypo_file = Paths.get(kbDir.getAbsolutePath(), HYPOTHESIS_FILE_NAME).toFile();
         if (hypo_file.exists()) {
             BufferedReader reader = new BufferedReader(new FileReader(hypo_file));
