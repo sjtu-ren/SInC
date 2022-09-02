@@ -8,10 +8,9 @@ import sinc2.rule.*;
 import sinc2.util.ArrayOperation;
 import sinc2.util.MultiSet;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -94,7 +93,7 @@ public class Hinter {
     protected final String kbPath;
     protected final String kbName;
     protected final String hintFilePath;
-    protected final String outputFilePath;
+    protected final Path outputFilePath;
 
     /** The target KB */
     protected NumeratedKb kb;
@@ -107,19 +106,22 @@ public class Hinter {
     /** The list of collected rules and the evaluation details */
     protected List<CollectedRuleInfo> collectedRuleInfos = new ArrayList<>();
 
+    public static Path getRulesFilePath(String hintFilePath, String kbName) {
+        return Paths.get(new File(hintFilePath).toPath().getParent().toString(), String.format("rules_%s.tsv", kbName));
+    }
+
     /**
      * Create a Hinter object.
      *
      * @param kbPath         The path to the numerated KB
      * @param kbName         The name of the KB
      * @param hintFilePath   The path to the hint file
-     * @param outputFilePath The path of the output file
      */
-    public Hinter(String kbPath, String kbName, String hintFilePath, String outputFilePath) {
+    public Hinter(String kbPath, String kbName, String hintFilePath) {
         this.kbPath = kbPath;
         this.kbName = kbName;
         this.hintFilePath = hintFilePath;
-        this.outputFilePath = outputFilePath;
+        this.outputFilePath = getRulesFilePath(hintFilePath, kbName);
     }
 
     /**
@@ -188,7 +190,7 @@ public class Hinter {
             }
 
             /* Dump the results */
-            PrintWriter writer = new PrintWriter(outputFilePath);
+            PrintWriter writer = new PrintWriter(outputFilePath.toFile());
             writer.printf("rule\t|r|\tE+\tE-\tFC\tτ\tδ\n");
             collectedRuleInfos.sort(Comparator.comparingDouble((CollectedRuleInfo e) -> e.score).reversed());
             for (CollectedRuleInfo rule_info: collectedRuleInfos) {
