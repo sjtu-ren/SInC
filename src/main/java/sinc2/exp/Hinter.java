@@ -174,6 +174,9 @@ public class Hinter {
 
                 /* Try each template */
                 for (Hint hint: hints) {
+                    if (head_arity != hint.functorArities[0]) {
+                        continue;
+                    }
                     int totalFunctors = hint.functorRestrictionCounterLink.length;
                     int[] template_functor_instantiation = ArrayOperation.initArrayWithValue(totalFunctors, UNDETERMINED);
                     int[] restriction_counters = new int[hint.restrictions.size()];

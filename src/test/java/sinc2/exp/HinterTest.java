@@ -97,13 +97,19 @@ class HinterTest {
         expected_rules.add(parseBareRule("parent(X,Y):-father(X,Y)", kb.getNumerationMap(), cache, tabu));
         expected_rules.add(parseBareRule("parent(X,Y):-mother(X,Y)", kb.getNumerationMap(), cache, tabu));
         expected_rules.add(parseBareRule("family(X,Y,Z):-father(X,Z),mother(Y,Z)", kb.getNumerationMap(), cache, tabu));
-        BufferedReader reader = new BufferedReader(new FileReader(Hinter.getRulesFilePath(hint_file.getAbsolutePath(), KB_NAME).toFile()));
+        File rules_file = Hinter.getRulesFilePath(hint_file.getAbsolutePath(), KB_NAME).toFile();
+        BufferedReader reader = new BufferedReader(new FileReader(rules_file));
         String line = reader.readLine();    // read the title line
         Set<Rule> actual_rules = new HashSet<>();
         while (null != (line = reader.readLine())) {
             actual_rules.add(parseBareRule(line.split("\t")[0], kb.getNumerationMap(), cache, tabu));
         }
         assertEquals(expected_rules, actual_rules);
+
+        /* Remove test files */
+        deleteDir(Paths.get(MEM_DIR, KB_NAME).toFile());
+        hint_file.delete();
+        rules_file.delete();
     }
 
     BareRule parseBareRule(String str, NumerationMap numMap, Set<Fingerprint> cache, Map<MultiSet<Integer>, Set<Fingerprint>> tabu) throws RuleParseException {
@@ -124,5 +130,15 @@ class HinterTest {
             structure.add(predicate);
         }
         return new BareRule(structure, cache, tabu);
+    }
+
+    private void deleteDir(File file) {
+        File[] contents = file.listFiles();
+        if (contents != null) {
+            for (File f : contents) {
+                deleteDir(f);
+            }
+        }
+        file.delete();
     }
 }
