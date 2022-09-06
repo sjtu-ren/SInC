@@ -362,6 +362,7 @@ class HinterTest {
         hint_file.delete();
         rules_file.delete();
     }
+    
     BareRule parseBareRule(String str, NumerationMap numMap, Set<Fingerprint> cache, Map<MultiSet<Integer>, Set<Fingerprint>> tabu) throws RuleParseException {
         List<ParsedPred> parsed_structure = Rule.parseStructure(str);
         List<Predicate> structure = new ArrayList<>();
