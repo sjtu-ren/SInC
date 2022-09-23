@@ -60,6 +60,8 @@ public abstract class Rule {
      * A "variable" is defined by the following regular expression: [A-Z][a-zA-z0-9]*
      * A "pred_symbol" and a "constant" are defined by the following regex: [a-z][a-zA-z0-9]*
      *
+     * If there are n LVs, the IDs of the variables range from 0 to n-1. Possible UVs are replaced as empty arguments.
+     *
      * @return The rule structure is represented by a list of ParsedPred because there is no mapping information for the
      * numerations of the names.
      */
@@ -180,6 +182,18 @@ public abstract class Rule {
             default:
                 throw new RuleParseException(String.format("Character not allowed at the beginning of the argument: '%c'", first_char));
         }
+    }
+
+    public static String toString(List<ParsedPred> structure) {
+        StringBuilder builder = new StringBuilder(structure.get(0).toString());
+        builder.append(":-");
+        if (1 < structure.size()) {
+            builder.append(structure.get(1));
+            for (int i = 2; i < structure.size(); i++) {
+                builder.append(',').append(structure.get(i));
+            }
+        }
+        return builder.toString();
     }
 
     /**

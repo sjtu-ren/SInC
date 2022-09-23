@@ -2,13 +2,15 @@ package sinc2.rule;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import sinc2.common.ArgIndicator;
-import sinc2.common.Argument;
-import sinc2.common.Predicate;
+import sinc2.common.*;
 import sinc2.kb.NumeratedKb;
 import sinc2.kb.NumerationMap;
 import sinc2.util.MultiSet;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -39,9 +41,15 @@ class FingerprintTest {
     static final int ARITY_PARENT = 2;
     static final int ARITY_GRANDPARENT = 2;
     static final NumerationMap map = new NumerationMap();
-    
+
+    static List<List<Predicate>[]> rule_pairs_dup_positive = new ArrayList<>();
+    static List<List<Predicate>[]> rule_pairs_dup_negative = new ArrayList<>();
+    static List<List<Predicate>[]> rule_pairs_spec_positive = new ArrayList<>();
+    static List<List<Predicate>[]> rule_pairs_spec_negative = new ArrayList<>();
+
     @BeforeAll
-    static void createNumerationMap() {
+    static void prepareTestCases() throws IOException, RuleParseException {
+        /* Create numeration map*/
         assertEquals(NUM_H, map.mapName(FUNCTOR_H));
         assertEquals(NUM_P, map.mapName(FUNCTOR_P));
         assertEquals(NUM_Q, map.mapName(FUNCTOR_Q));
@@ -50,20 +58,50 @@ class FingerprintTest {
         assertEquals(NUM_GRANDPARENT, map.mapName(FUNCTOR_GRANDPARENT));
         assertEquals(NUM_C, map.mapName(CONST_C));
         assertEquals(NUM_E, map.mapName(CONST_E));
+
+        /* Load test cases */
+        String[] file_names = new String[]{
+                "test/dup_rules_positive.txt",
+                "test/dup_rules_negative.txt",
+                "test/spec_rules_positive.txt",
+                "test/spec_rules_negative.txt"
+        };
+        List<List<Predicate>[]>[] test_cases_lists = new List[]{
+                rule_pairs_dup_positive,
+                rule_pairs_dup_negative,
+                rule_pairs_spec_positive,
+                rule_pairs_spec_negative
+        };
+        for (int i = 0; i < file_names.length; i++) {
+//            BufferedReader reader = new BufferedReader(new FileReader(file_names[i]));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(FingerprintTest.class.getClassLoader().getResourceAsStream(file_names[i])));
+            List<List<Predicate>[]> test_cases = test_cases_lists[i];
+            while (true) {
+                String rule_str1 = reader.readLine();
+                String rule_str2 = reader.readLine();
+                if (null == rule_str1) break;
+                List<ParsedPred> parsed_rule_1 = Rule.parseStructure(rule_str1);
+                List<ParsedPred> parsed_rule_2 = Rule.parseStructure(rule_str2);
+                test_cases.add(new List[]{
+                        parsedStructure2RuleStructure(parsed_rule_1),
+                        parsedStructure2RuleStructure(parsed_rule_2)
+                });
+            }
+            reader.close();
+        }
     }
 
     @Test
     public void testConstruction() {
         /* h(X, c) <- p(X, Y), q(Y, Z, e), h(Z, ?), h(X, ?) */
         /* Equivalence Classes:
-         * - In Head:
-         *      X: {h[0], p[0], h[0]}   [0]
-         *      c: {h[1], c}            [1]
-         * - In Body:
-         *      Y: {p[1], q[0]}
-         *      Z: {q[1], h[0]}
-         *      e: {q[2], e}
-         *      ?: {h[1]}, {h[1]}
+         *    X: {h[0], p[0], h[0]}
+         *    c: {h[1], c}
+         *    Y: {p[1], q[0]}
+         *    Z: {q[1], h[0]}
+         *    e: {q[2], e}
+         *    ?: {h[1]}
+         *    ?: {h[1]}
          */
         final Predicate head = new Predicate(NUM_H, 2);
         head.args[0] = Argument.variable(0);
@@ -84,344 +122,417 @@ class FingerprintTest {
         final List<Predicate> rule = List.of(head, body1, body2, body3, body4);
         assertEquals("h(X0,c):-p(X0,X1),q(X1,X2,e),h(X2,?),h(X0,?)", rule2String(rule));
 
-        Fingerprint.LabeledEquivalenceClass lec_x = new Fingerprint.LabeledEquivalenceClass();
-        lec_x.addArgIndicator(ArgIndicator.getVariableIndicator(NUM_H, 0));
-        lec_x.addArgIndicator(ArgIndicator.getVariableIndicator(NUM_P, 0));
-        lec_x.addArgIndicator(ArgIndicator.getVariableIndicator(NUM_H, 0));
-        lec_x.addLabel(0);
-        Fingerprint.LabeledEquivalenceClass lec_c = new Fingerprint.LabeledEquivalenceClass();
-        lec_c.addArgIndicator(ArgIndicator.getVariableIndicator(NUM_H, 1));
-        lec_c.addArgIndicator(ArgIndicator.getConstantIndicator(NUM_C));
-        lec_c.addLabel(1);
-        Fingerprint.LabeledEquivalenceClass lec_y = new Fingerprint.LabeledEquivalenceClass();
-        lec_y.addArgIndicator(ArgIndicator.getVariableIndicator(NUM_P, 1));
-        lec_y.addArgIndicator(ArgIndicator.getVariableIndicator(NUM_Q, 0));
-        Fingerprint.LabeledEquivalenceClass lec_z = new Fingerprint.LabeledEquivalenceClass();
-        lec_z.addArgIndicator(ArgIndicator.getVariableIndicator(NUM_Q, 1));
-        lec_z.addArgIndicator(ArgIndicator.getVariableIndicator(NUM_H, 0));
-        Fingerprint.LabeledEquivalenceClass lec_e = new Fingerprint.LabeledEquivalenceClass();
-        lec_e.addArgIndicator(ArgIndicator.getVariableIndicator(NUM_Q, 2));
-        lec_e.addArgIndicator(ArgIndicator.getConstantIndicator(NUM_E));
-        Fingerprint.LabeledEquivalenceClass lec_uv1 = new Fingerprint.LabeledEquivalenceClass();
-        lec_uv1.addArgIndicator(ArgIndicator.getVariableIndicator(NUM_H, 1));
-        Fingerprint.LabeledEquivalenceClass lec_uv2 = new Fingerprint.LabeledEquivalenceClass();
-        lec_uv2.addArgIndicator(ArgIndicator.getVariableIndicator(NUM_H, 1));
-        MultiSet<Fingerprint.LabeledEquivalenceClass> expected_lec_set = new MultiSet<>(
-                new Fingerprint.LabeledEquivalenceClass[]{lec_x, lec_y, lec_z, lec_c, lec_e, lec_uv1, lec_uv2}
+        MultiSet<ArgIndicator> eqc_x = new MultiSet<>();
+        eqc_x.add(ArgIndicator.getVariableIndicator(NUM_H, 0));
+        eqc_x.add(ArgIndicator.getVariableIndicator(NUM_P, 0));
+        eqc_x.add(ArgIndicator.getVariableIndicator(NUM_H, 0));
+        MultiSet<ArgIndicator> eqc_c = new MultiSet<>();
+        eqc_c.add(ArgIndicator.getVariableIndicator(NUM_H, 1));
+        eqc_c.add(ArgIndicator.getConstantIndicator(NUM_C));
+        MultiSet<ArgIndicator> eqc_y = new MultiSet<>();
+        eqc_y.add(ArgIndicator.getVariableIndicator(NUM_P, 1));
+        eqc_y.add(ArgIndicator.getVariableIndicator(NUM_Q, 0));
+        MultiSet<ArgIndicator> eqc_z = new MultiSet<>();
+        eqc_z.add(ArgIndicator.getVariableIndicator(NUM_Q, 1));
+        eqc_z.add(ArgIndicator.getVariableIndicator(NUM_H, 0));
+        MultiSet<ArgIndicator> eqc_e = new MultiSet<>();
+        eqc_e.add(ArgIndicator.getVariableIndicator(NUM_Q, 2));
+        eqc_e.add(ArgIndicator.getConstantIndicator(NUM_E));
+        MultiSet<ArgIndicator> eqc_uv1 = new MultiSet<>();
+        eqc_uv1.add(ArgIndicator.getVariableIndicator(NUM_H, 1));
+        MultiSet<ArgIndicator> eqc_uv2 = new MultiSet<>();
+        eqc_uv2.add(ArgIndicator.getVariableIndicator(NUM_H, 1));
+        MultiSet<MultiSet<ArgIndicator>> expected_eqc_set = new MultiSet<>(
+                new MultiSet[]{eqc_x, eqc_y, eqc_z, eqc_c, eqc_e, eqc_uv1, eqc_uv2}
         );
+        Fingerprint.PredicateWithClass pwc_head = new Fingerprint.PredicateWithClass(NUM_H, 2);
+        pwc_head.classArgs[0] = eqc_x;
+        pwc_head.classArgs[1] = eqc_c;
+        Fingerprint.PredicateWithClass pwc_body1 = new Fingerprint.PredicateWithClass(NUM_P, 2);
+        pwc_body1.classArgs[0] = eqc_x;
+        pwc_body1.classArgs[1] = eqc_y;
+        Fingerprint.PredicateWithClass pwc_body2 = new Fingerprint.PredicateWithClass(NUM_Q, 3);
+        pwc_body2.classArgs[0] = eqc_y;
+        pwc_body2.classArgs[1] = eqc_z;
+        pwc_body2.classArgs[2] = eqc_e;
+        Fingerprint.PredicateWithClass pwc_body3 = new Fingerprint.PredicateWithClass(NUM_H, 2);
+        pwc_body3.classArgs[0] = eqc_z;
+        pwc_body3.classArgs[1] = eqc_uv1;
+        Fingerprint.PredicateWithClass pwc_body4 = new Fingerprint.PredicateWithClass(NUM_H, 2);
+        pwc_body4.classArgs[0] = eqc_x;
+        pwc_body4.classArgs[1] = eqc_uv2;
+        List<Fingerprint.PredicateWithClass> expected_classed_structure = new ArrayList<>(List.of(
+                new Fingerprint.PredicateWithClass[]{pwc_head, pwc_body1, pwc_body2, pwc_body3, pwc_body4}
+        ));
 
         Fingerprint fingerprint = new Fingerprint(rule);
-        assertEquals(NUM_H, fingerprint.getHeadFunctor());
-        assertEquals(expected_lec_set, fingerprint.getLabeledEquivalenceClasses());
+        assertEquals(expected_eqc_set, fingerprint.getEquivalenceClasses());
+        assertEquals(expected_classed_structure, fingerprint.getClassedStructure());
     }
 
     @Test
-    public void testEquality1() {
-        /* R1: h(X, Y) <- h(Y, X) */
-        /* R2: h(Y, X) <- h(X, Y) */
-        final Predicate head1 = new Predicate(NUM_H, 2);
-        head1.args[0] = Argument.variable(0);
-        head1.args[1] = Argument.variable(1);
-        final Predicate body11 = new Predicate(NUM_H, 2);
-        body11.args[0] = Argument.variable(1);
-        body11.args[1] = Argument.variable(0);
-        final List<Predicate> rule1 = List.of(head1, body11);
-        assertEquals("h(X0,X1):-h(X1,X0)", rule2String(rule1));
-        final Fingerprint finger_print1 = new Fingerprint(rule1);
-
-        final Predicate head2 = new Predicate(NUM_H, 2);
-        head2.args[0] = Argument.variable(1);
-        head2.args[1] = Argument.variable(0);
-        final Predicate body21 = new Predicate(NUM_H, 2);
-        body21.args[0] = Argument.variable(0);
-        body21.args[1] = Argument.variable(1);
-        final List<Predicate> rule2 = List.of(head2, body21);
-        assertEquals("h(X1,X0):-h(X0,X1)", rule2String(rule2));
-        final Fingerprint finger_print2 = new Fingerprint(rule2);
-
-        assertEquals(finger_print1, finger_print2);
-        assertEquals(finger_print2, finger_print1);
+    public void testDupFromStructure() {
+        String[][] rule_pair_strs = new String[][]{
+                new String[]{
+                        "h(X0,X1):-h(X1,X0)",
+                        "h(X1,X0):-h(X0,X1)"
+                },
+                new String[]{
+                        "h(X0,X2):-p(X0,X1),q(X1,X2)",
+                        "h(X1,X0):-q(X2,X0),p(X1,X2)"
+                }
+        };
+        List<Predicate>[][] rule_pairs = new List[][]{
+                new List[] {
+                        new ArrayList<>(List.of(
+                                new Predicate(NUM_H, new int[]{Argument.variable(0), Argument.variable(1)}),
+                                new Predicate(NUM_H, new int[]{Argument.variable(1), Argument.variable(0)})
+                        )),
+                        new ArrayList<>(List.of(
+                                new Predicate(NUM_H, new int[]{Argument.variable(1), Argument.variable(0)}),
+                                new Predicate(NUM_H, new int[]{Argument.variable(0), Argument.variable(1)})
+                        ))
+                },
+                new List[]{
+                        new ArrayList<>(List.of(
+                                new Predicate(NUM_H, new int[]{Argument.variable(0), Argument.variable(2)}),
+                                new Predicate(NUM_P, new int[]{Argument.variable(0), Argument.variable(1)}),
+                                new Predicate(NUM_Q, new int[]{Argument.variable(1), Argument.variable(2)})
+                        )),
+                        new ArrayList<>(List.of(
+                                new Predicate(NUM_H, new int[]{Argument.variable(1), Argument.variable(0)}),
+                                new Predicate(NUM_Q, new int[]{Argument.variable(2), Argument.variable(0)}),
+                                new Predicate(NUM_P, new int[]{Argument.variable(1), Argument.variable(2)})
+                        ))
+                }
+        };
+        int failed = 0;
+        for (int i = 0; i < rule_pairs.length; i++) {
+            List<Predicate> rule1 = rule_pairs[i][0];
+            List<Predicate> rule2 = rule_pairs[i][1];
+            assertEquals(rule_pair_strs[i][0], rule2String(rule1));
+            assertEquals(rule_pair_strs[i][1], rule2String(rule2));
+            Fingerprint fp1 = new Fingerprint(rule1);
+            Fingerprint fp2 = new Fingerprint(rule2);
+            boolean fp1_eq_fp2 = fp1.equals(fp2);
+            boolean fp2_eq_fp1 = fp2.equals(fp1);
+            if (!fp1_eq_fp2 || !fp2_eq_fp1) {
+                System.out.printf("Should match but not (@%d, %s, %s):\n", i, fp1_eq_fp2?"":"-x->", fp2_eq_fp1?"":"<-x-");
+                System.out.println(rule2String(rule1));
+                System.out.println(rule2String(rule2));
+                failed++;
+            }
+        }
+        int passed = rule_pairs.length - failed;
+        System.out.printf("Passed: %.2f%%(%d/%d)\n", passed * 100.0 / rule_pairs.length, passed, rule_pairs.length);
+        assertEquals(0, failed);
     }
 
     @Test
-    void testEquality2() {
-        /* R3: h(X) <- h(Y) */
-        /* R4: h(X) <- h(Y), h(Z) */
-        /* If no independent fragment is introduced in the search, this will not happen in real world cases */
-        final Predicate head3 = new Predicate(NUM_H, 1);
-        final Predicate body31 = new Predicate(NUM_H, 1);
-        final List<Predicate> rule3 = List.of(head3, body31);
-        assertEquals("h(?):-h(?)", rule2String(rule3));
-        final Fingerprint finger_print3 = new Fingerprint(rule3);
-
-        final Predicate head4 = new Predicate(NUM_H, 1);
-        final Predicate body41 = new Predicate(NUM_H, 1);
-        final Predicate body42 = new Predicate(NUM_H, 1);
-        final List<Predicate> rule4 = List.of(head4, body41, body42);
-        assertEquals("h(?):-h(?),h(?)", rule2String(rule4));
-        final Fingerprint finger_print4 = new Fingerprint(rule4);
-
-        assertNotEquals(finger_print3, finger_print4);
-        assertNotEquals(finger_print4, finger_print3);
+    public void testNotDupFromStructure() {
+        String[][] rule_pair_strs = new String[][]{
+                new String[]{   // If no independent fragment is introduced in the search, this will not happen in real world cases
+                        "h(X0):-h(X1)",
+                        "h(X0):-h(X1),h(X2)"
+                },
+                new String[]{
+                        "h(X0):-p(X0,X1),q(X1,c)",
+                        "h(X0):-p(X0,X1),q(c,X1)"
+                },
+                new String[]{
+                        "p(X0,X1):-q(X0,X0),q(?,X1)",
+                        "p(X0,X1):-q(X0,X1),q(?,X0)",
+                },
+                new String[]{
+                        "p(X0,X1):-q(X0,?),q(X2,X1),q(?,X2)",
+                        "p(X0,X1):-q(X0,X2),q(?,X1),q(X2,?)"
+                },
+                new String[]{
+                        "h(X0,X2):-p(X0,X1),q(X1,X2)",
+                        "h(X1,X0):-q(X2,X0),p(X2,X1)"
+                }
+        };
+        List<Predicate>[][] rule_pairs = new List[][]{
+                new List[]{
+                        new ArrayList<>(List.of(
+                                new Predicate(NUM_H, new int[]{Argument.variable(0)}),
+                                new Predicate(NUM_H, new int[]{Argument.variable(1)})
+                        )),
+                        new ArrayList<>(List.of(
+                                new Predicate(NUM_H, new int[]{Argument.variable(0)}),
+                                new Predicate(NUM_H, new int[]{Argument.variable(1)}),
+                                new Predicate(NUM_H, new int[]{Argument.variable(2)})
+                        ))
+                },
+                new List[] {
+                        new ArrayList<>(List.of(
+                                new Predicate(NUM_H, new int[]{Argument.variable(0)}),
+                                new Predicate(NUM_P, new int[]{Argument.variable(0), Argument.variable(1)}),
+                                new Predicate(NUM_Q, new int[]{Argument.variable(1), Argument.constant(NUM_C)})
+                        )),
+                        new ArrayList<>(List.of(
+                                new Predicate(NUM_H, new int[]{Argument.variable(0)}),
+                                new Predicate(NUM_P, new int[]{Argument.variable(0), Argument.variable(1)}),
+                                new Predicate(NUM_Q, new int[]{Argument.constant(NUM_C), Argument.variable(1)})
+                        ))
+                },
+                new List[]{
+                        new ArrayList<>(List.of(
+                                new Predicate(NUM_P, new int[]{Argument.variable(0), Argument.variable(1)}),
+                                new Predicate(NUM_Q, new int[]{Argument.variable(0), Argument.variable(0)}),
+                                new Predicate(NUM_Q, new int[]{Argument.EMPTY_VALUE, Argument.variable(1)})
+                        )),
+                        new ArrayList<>(List.of(
+                                new Predicate(NUM_P, new int[]{Argument.variable(0), Argument.variable(1)}),
+                                new Predicate(NUM_Q, new int[]{Argument.variable(0), Argument.variable(1)}),
+                                new Predicate(NUM_Q, new int[]{Argument.EMPTY_VALUE, Argument.variable(0)})
+                        ))
+                },
+                new List[]{
+                        new ArrayList<>(List.of(
+                                new Predicate(NUM_P, new int[]{Argument.variable(0), Argument.variable(1)}),
+                                new Predicate(NUM_Q, new int[]{Argument.variable(0), Argument.EMPTY_VALUE}),
+                                new Predicate(NUM_Q, new int[]{Argument.variable(2), Argument.variable(1)}),
+                                new Predicate(NUM_Q, new int[]{Argument.EMPTY_VALUE, Argument.variable(2)})
+                        )),
+                        new ArrayList<>(List.of(
+                                new Predicate(NUM_P, new int[]{Argument.variable(0), Argument.variable(1)}),
+                                new Predicate(NUM_Q, new int[]{Argument.variable(0), Argument.variable(2)}),
+                                new Predicate(NUM_Q, new int[]{Argument.EMPTY_VALUE, Argument.variable(1)}),
+                                new Predicate(NUM_Q, new int[]{Argument.variable(2), Argument.EMPTY_VALUE})
+                        ))
+                },
+                new List[]{
+                        new ArrayList<>(List.of(
+                                new Predicate(NUM_H, new int[]{Argument.variable(0), Argument.variable(2)}),
+                                new Predicate(NUM_P, new int[]{Argument.variable(0), Argument.variable(1)}),
+                                new Predicate(NUM_Q, new int[]{Argument.variable(1), Argument.variable(2)})
+                        )),
+                        new ArrayList<>(List.of(
+                                new Predicate(NUM_H, new int[]{Argument.variable(1), Argument.variable(0)}),
+                                new Predicate(NUM_Q, new int[]{Argument.variable(2), Argument.variable(0)}),
+                                new Predicate(NUM_P, new int[]{Argument.variable(2), Argument.variable(1)})
+                        ))
+                }
+        };
+        int failed = 0;
+        for (int i = 0; i < rule_pairs.length; i++) {
+            List<Predicate> rule1 = rule_pairs[i][0];
+            List<Predicate> rule2 = rule_pairs[i][1];
+            assertEquals(rule_pair_strs[i][0], rule2String(rule1));
+            assertEquals(rule_pair_strs[i][1], rule2String(rule2));
+            Fingerprint fp1 = new Fingerprint(rule1);
+            Fingerprint fp2 = new Fingerprint(rule2);
+            boolean fp1_eq_fp2 = fp1.equals(fp2);
+            boolean fp2_eq_fp1 = fp2.equals(fp1);
+            if (fp1_eq_fp2 || fp2_eq_fp1) {
+                System.out.printf("Should not but match (@%d, %s, %s):\n", i, fp1_eq_fp2?"->":"", fp2_eq_fp1?"<-":"");
+                System.out.println(rule2String(rule1));
+                System.out.println(rule2String(rule2));
+                failed++;
+            }
+        }
+        int passed = rule_pairs.length - failed;
+        System.out.printf("Passed: %.2f%%(%d/%d)\n", passed * 100.0 / rule_pairs.length, passed, rule_pairs.length);
+        assertEquals(0, failed);
     }
 
     @Test
-    void testEquality3() {
-        /* R5: h(X) <- p(X, Y) , q(Y, c) */
-        /* R6: h(X) <- p(X, Y) , q(c, Y) */
-        final Predicate head5 = new Predicate(NUM_H, 1);
-        head5.args[0] = Argument.variable(0);
-        final Predicate body51 = new Predicate(NUM_P, 2);
-        body51.args[0] = Argument.variable(0);
-        body51.args[1] = Argument.variable(1);
-        final Predicate body52 = new Predicate(NUM_Q, 2);
-        body52.args[0] = Argument.variable(1);
-        body52.args[1] = Argument.constant(NUM_C);
-        final List<Predicate> rule5 = List.of(head5, body51, body52);
-        assertEquals("h(X0):-p(X0,X1),q(X1,c)", rule2String(rule5));
-        final Fingerprint finger_print5 = new Fingerprint(rule5);
-
-        final Predicate head6 = new Predicate(NUM_H, 1);
-        head6.args[0] = Argument.variable(0);
-        final Predicate body61 = new Predicate(NUM_P, 2);
-        body61.args[0] = Argument.variable(0);
-        body61.args[1] = Argument.variable(1);
-        final Predicate body62 = new Predicate(NUM_Q, 2);
-        body62.args[0] = Argument.constant(NUM_C);
-        body62.args[1] = Argument.variable(1);
-        final List<Predicate> rule6 = List.of(head6, body61, body62);
-        assertEquals("h(X0):-p(X0,X1),q(c,X1)", rule2String(rule6));
-        final Fingerprint finger_print6 = new Fingerprint(rule6);
-
-        assertNotEquals(finger_print5, finger_print6);
-        assertNotEquals(finger_print6, finger_print5);
+    void testSpecOfFromStructure() {
+        String[][] rule_pair_strs = new String[][]{
+                new String[]{
+                        "p(X0,?):-q(?,X0)",
+                        "p(X0,X1):-q(X1,X0)"
+                },
+                new String[]{
+                        "p(X0,?):-q(?,X0)",
+                        "p(X0,?):-q(X1,X0),p(X1,?)"
+                },
+                new String[]{
+                        "p(X0,?):-q(?,X0)",
+                        "p(X0,?):-q(c,X0)"
+                }
+        };
+        List<Predicate>[][] rule_pairs = new List[][]{
+                new List[] {
+                        new ArrayList<>(List.of(
+                                new Predicate(NUM_P, new int[]{Argument.variable(0), Argument.EMPTY_VALUE}),
+                                new Predicate(NUM_Q, new int[]{Argument.EMPTY_VALUE, Argument.variable(0)})
+                        )),
+                        new ArrayList<>(List.of(
+                                new Predicate(NUM_P, new int[]{Argument.variable(0), Argument.variable(1)}),
+                                new Predicate(NUM_Q, new int[]{Argument.variable(1), Argument.variable(0)})
+                        ))
+                },
+                new List[] {
+                        new ArrayList<>(List.of(
+                                new Predicate(NUM_P, new int[]{Argument.variable(0), Argument.EMPTY_VALUE}),
+                                new Predicate(NUM_Q, new int[]{Argument.EMPTY_VALUE, Argument.variable(0)})
+                        )),
+                        new ArrayList<>(List.of(
+                                new Predicate(NUM_P, new int[]{Argument.variable(0), Argument.EMPTY_VALUE}),
+                                new Predicate(NUM_Q, new int[]{Argument.variable(1), Argument.variable(0)}),
+                                new Predicate(NUM_P, new int[]{Argument.variable(1), Argument.EMPTY_VALUE})
+                        ))
+                },
+                new List[] {
+                        new ArrayList<>(List.of(
+                                new Predicate(NUM_P, new int[]{Argument.variable(0), Argument.EMPTY_VALUE}),
+                                new Predicate(NUM_Q, new int[]{Argument.EMPTY_VALUE, Argument.variable(0)})
+                        )),
+                        new ArrayList<>(List.of(
+                                new Predicate(NUM_P, new int[]{Argument.variable(0), Argument.EMPTY_VALUE}),
+                                new Predicate(NUM_Q, new int[]{Argument.constant(NUM_C), Argument.variable(0)})
+                        )),
+                },
+        };
+        int failed = 0;
+        for (int i = 0; i < rule_pairs.length; i++) {
+            List<Predicate> rule1 = rule_pairs[i][0];
+            List<Predicate> rule2 = rule_pairs[i][1];
+            assertEquals(rule_pair_strs[i][0], rule2String(rule1));
+            assertEquals(rule_pair_strs[i][1], rule2String(rule2));
+            Fingerprint fp1 = new Fingerprint(rule1);
+            Fingerprint fp2 = new Fingerprint(rule2);
+            if (!fp1.generalizationOf(fp2)) {
+                System.out.printf("Should be specialization but not (@%d):\n", i);
+                System.out.println(rule2String(rule1));
+                System.out.println(rule2String(rule2));
+                failed++;
+            }
+        }
+        int passed = rule_pairs.length - failed;
+        System.out.printf("Passed: %.2f%%(%d/%d)\n", passed * 100.0 / rule_pairs.length, passed, rule_pairs.length);
+        assertEquals(0, failed);
     }
 
     @Test
-    void testFalsePositive1() {
-        /* #1: p(X, Y) :- q(X, X), q(?, Y) */
-        /* #2: p(X, Y) :- q(X, Y), q(?, X) */
-        /* Current fingerprint structure will incorrectly report the two rules as identical */
-        final Predicate head1 = new Predicate(NUM_P, 2);
-        head1.args[0] = Argument.variable(0);
-        head1.args[1] = Argument.variable(1);
-        final Predicate body11 = new Predicate(NUM_Q, 2);
-        body11.args[0] = Argument.variable(0);
-        body11.args[1] = Argument.variable(0);
-        final Predicate body12 = new Predicate(NUM_Q, 2);
-        body12.args[0] = Argument.EMPTY_VALUE;
-        body12.args[1] = Argument.variable(1);
-        List<Predicate> rule1 = List.of(head1, body11, body12);
-        assertEquals("p(X0,X1):-q(X0,X0),q(?,X1)", rule2String(rule1));
-        final Fingerprint fingerprint1 = new Fingerprint(rule1);
-
-        final Predicate head2 = new Predicate(NUM_P, 2);
-        head2.args[0] = Argument.variable(0);
-        head2.args[1] = Argument.variable(1);
-        final Predicate body21 = new Predicate(NUM_Q, 2);
-        body21.args[0] = Argument.variable(0);
-        body21.args[1] = Argument.variable(1);
-        final Predicate body22 = new Predicate(NUM_Q, 2);
-        body22.args[0] = Argument.EMPTY_VALUE;
-        body22.args[1] = Argument.variable(0);
-        List<Predicate> rule2 = List.of(head2, body21, body22);
-        assertEquals("p(X0,X1):-q(X0,X1),q(?,X0)", rule2String(rule2));
-        final Fingerprint fingerprint2 = new Fingerprint(rule2);
-
-        assertEquals(fingerprint1, fingerprint2);
-        assertEquals(fingerprint2, fingerprint1);
+    void testNotSpecOfFormStructure() {
+        String[][] rule_pair_strs = new String[][]{
+                new String[]{
+                        "p(X0,X1):-q(X0,X1)",
+                        "p(X0,X1):-q(X0,?),q(?,X1)"
+                }
+        };
+        List<Predicate>[][] rule_pairs = new List[][]{
+                new List[]{
+                        new ArrayList<>(List.of(
+                                new Predicate(NUM_P, new int[]{Argument.variable(0), Argument.variable(1)}),
+                                new Predicate(NUM_Q, new int[]{Argument.variable(0), Argument.variable(1)})
+                        )),
+                        new ArrayList<>(List.of(
+                                new Predicate(NUM_P, new int[]{Argument.variable(0), Argument.variable(1)}),
+                                new Predicate(NUM_Q, new int[]{Argument.variable(0), Argument.EMPTY_VALUE}),
+                                new Predicate(NUM_Q, new int[]{Argument.EMPTY_VALUE, Argument.variable(1)})
+                        ))
+                }
+        };
+        int failed = 0;
+        for (int i = 0; i < rule_pairs.length; i++) {
+            List<Predicate> rule1 = rule_pairs[i][0];
+            List<Predicate> rule2 = rule_pairs[i][1];
+            assertEquals(rule_pair_strs[i][0], rule2String(rule1));
+            assertEquals(rule_pair_strs[i][1], rule2String(rule2));
+            Fingerprint fp1 = new Fingerprint(rule1);
+            Fingerprint fp2 = new Fingerprint(rule2);
+            if (fp1.generalizationOf(fp2)) {
+                System.out.printf("Should not be specialization but is (@%d):\n", i);
+                System.out.println(rule2String(rule1));
+                System.out.println(rule2String(rule2));
+                failed++;
+            }
+        }
+        int passed = rule_pairs.length - failed;
+        System.out.printf("Passed: %.2f%%(%d/%d)\n", passed * 100.0 / rule_pairs.length, passed, rule_pairs.length);
+        assertEquals(0, failed);
     }
 
     @Test
-    void testFalsePositive2() {
-        /* #1: p(X, Y) :- q(X, ?), q(Z, Y), q(?, Z) */
-        /* #2: p(X, Y) :- q(X, Z), q(?, Y), q(Z, ?) */
-        /* Current fingerprint structure will incorrectly report the two rules as identical */
-        final Predicate head1 = new Predicate(NUM_P, 2);
-        head1.args[0] = Argument.variable(0);
-        head1.args[1] = Argument.variable(1);
-        final Predicate body11 = new Predicate(NUM_Q, 2);
-        body11.args[0] = Argument.variable(0);
-        body11.args[1] = Argument.EMPTY_VALUE;
-        final Predicate body12 = new Predicate(NUM_Q, 2);
-        body12.args[0] = Argument.variable(2);
-        body12.args[1] = Argument.variable(1);
-        final Predicate body13 = new Predicate(NUM_Q, 2);
-        body13.args[0] = Argument.EMPTY_VALUE;
-        body13.args[1] = Argument.variable(2);
-        List<Predicate> rule1 = List.of(head1, body11, body12, body13);
-        assertEquals("p(X0,X1):-q(X0,?),q(X2,X1),q(?,X2)", rule2String(rule1));
-        final Fingerprint fingerprint1 = new Fingerprint(rule1);
-
-        final Predicate head2 = new Predicate(NUM_P, 2);
-        head2.args[0] = Argument.variable(0);
-        head2.args[1] = Argument.variable(1);
-        final Predicate body21 = new Predicate(NUM_Q, 2);
-        body21.args[0] = Argument.variable(0);
-        body21.args[1] = Argument.variable(2);
-        final Predicate body22 = new Predicate(NUM_Q, 2);
-        body22.args[0] = Argument.EMPTY_VALUE;
-        body22.args[1] = Argument.variable(1);
-        final Predicate body23 = new Predicate(NUM_Q, 2);
-        body23.args[0] = Argument.variable(2);
-        body23.args[1] = Argument.EMPTY_VALUE;
-        List<Predicate> rule2 = List.of(head2, body21, body22, body23);
-        assertEquals("p(X0,X1):-q(X0,X2),q(?,X1),q(X2,?)", rule2String(rule2));
-        final Fingerprint fingerprint2 = new Fingerprint(rule2);
-
-        assertEquals(fingerprint1, fingerprint2);
-        assertEquals(fingerprint2, fingerprint1);
+    void testDupFromRuleString() {
+        int failed = 0;
+        int total_cases = rule_pairs_dup_positive.size();
+        for (int i = 0; i < total_cases; i++) {
+            List<Predicate> rule1 = rule_pairs_dup_positive.get(i)[0];
+            List<Predicate> rule2 = rule_pairs_dup_positive.get(i)[1];
+            Fingerprint fp1 = new Fingerprint(rule1);
+            Fingerprint fp2 = new Fingerprint(rule2);
+            boolean fp1_eq_fp2 = fp1.equals(fp2);
+            boolean fp2_eq_fp1 = fp2.equals(fp1);
+            if (!fp1_eq_fp2 || !fp2_eq_fp1) {
+                System.out.printf("Should match but not (@%d, %s, %s):\n", i, fp1_eq_fp2?"":"-x->", fp2_eq_fp1?"":"<-x-");
+                System.out.println(rule2String(rule1));
+                System.out.println(rule2String(rule2));
+                failed++;
+            }
+        }
+        int passed = total_cases - failed;
+        System.out.printf("Passed: %.2f%%(%d/%d)\n", passed * 100.0 / total_cases, passed, total_cases);
+        assertEquals(0, failed);
     }
 
     @Test
-    public void test2() {
-        /* #1: grandparent(X, Z) :- parent(X, Y), father(Y, Z) */
-        final Predicate p11 = new Predicate(NUM_GRANDPARENT, ARITY_GRANDPARENT);
-        p11.args[0] = Argument.variable(0);
-        p11.args[1] = Argument.variable(2);
-        final Predicate p12 = new Predicate(NUM_PARENT, ARITY_PARENT);
-        p12.args[0] = Argument.variable(0);
-        p12.args[1] = Argument.variable(1);
-        final Predicate p13 = new Predicate(NUM_FATHER, ARITY_FATHER);
-        p13.args[0] = Argument.variable(1);
-        p13.args[1] = Argument.variable(2);
-        final List<Predicate> rule1 = List.of(p11, p12, p13);
-        assertEquals("grandparent(X0,X2):-parent(X0,X1),father(X1,X2)", rule2String(rule1));
-        final Fingerprint finger_print1 = new Fingerprint(rule1);
-
-        /* #2: grandparent(Y, X) :- father(Z, X), parent(Y, Z) */
-        final Predicate p21 = new Predicate(NUM_GRANDPARENT, ARITY_GRANDPARENT);
-        p21.args[0] = Argument.variable(1);
-        p21.args[1] = Argument.variable(0);
-        final Predicate p22 = new Predicate(NUM_FATHER, ARITY_FATHER);
-        p22.args[0] = Argument.variable(2);
-        p22.args[1] = Argument.variable(0);
-        final Predicate p23 = new Predicate(NUM_PARENT, ARITY_PARENT);
-        p23.args[0] = Argument.variable(1);
-        p23.args[1] = Argument.variable(2);
-        final List<Predicate> rule2 = List.of(p21, p22, p23);
-        assertEquals("grandparent(X1,X0):-father(X2,X0),parent(X1,X2)", rule2String(rule2));
-        final Fingerprint finger_print2 = new Fingerprint(rule2);
-
-        /* #3: grandparent(Y, X) :- father(Z, X), parent(Z, Y) */
-        final Predicate p31 = new Predicate(NUM_GRANDPARENT, ARITY_GRANDPARENT);
-        p31.args[0] = Argument.variable(1);
-        p31.args[1] = Argument.variable(0);
-        final Predicate p32 = new Predicate(NUM_FATHER, ARITY_FATHER);
-        p32.args[0] = Argument.variable(2);
-        p32.args[1] = Argument.variable(0);
-        final Predicate p33 = new Predicate(NUM_PARENT, ARITY_PARENT);
-        p33.args[0] = Argument.variable(2);
-        p33.args[1] = Argument.variable(1);
-        final List<Predicate> rule3 = List.of(p31, p32, p33);
-        assertEquals("grandparent(X1,X0):-father(X2,X0),parent(X2,X1)", rule2String(rule3));
-        final Fingerprint finger_print3 = new Fingerprint(rule3);
-
-        /* #4: grandparent(Y, X) :- father(?, X), parent(Y, ?) */
-        final Predicate p41 = new Predicate(NUM_GRANDPARENT, ARITY_GRANDPARENT);
-        p41.args[0] = Argument.variable(1);
-        p41.args[1] = Argument.variable(0);
-        final Predicate p42 = new Predicate(NUM_FATHER, ARITY_FATHER);
-        p42.args[0] = Argument.EMPTY_VALUE;
-        p42.args[1] = Argument.variable(0);
-        final Predicate p43 = new Predicate(NUM_PARENT, ARITY_PARENT);
-        p43.args[0] = Argument.variable(1);
-        p43.args[1] = Argument.EMPTY_VALUE;
-        final List<Predicate> rule4 = List.of(p41, p42, p43);
-        assertEquals("grandparent(X1,X0):-father(?,X0),parent(X1,?)", rule2String(rule4));
-        final Fingerprint finger_print4 = new Fingerprint(rule4);
-
-        assertEquals(finger_print1, finger_print2);
-        assertNotEquals(finger_print1, finger_print3);
-        assertNotEquals(finger_print1, finger_print4);
-        assertNotEquals(finger_print3, finger_print4);
+    void testNotDupFromRuleString() {
+        int failed = 0;
+        int total_cases = rule_pairs_dup_negative.size();
+        for (int i = 0; i < total_cases; i++) {
+            List<Predicate> rule1 = rule_pairs_dup_negative.get(i)[0];
+            List<Predicate> rule2 = rule_pairs_dup_negative.get(i)[1];
+            Fingerprint fp1 = new Fingerprint(rule1);
+            Fingerprint fp2 = new Fingerprint(rule2);
+            boolean fp1_eq_fp2 = fp1.equals(fp2);
+            boolean fp2_eq_fp1 = fp2.equals(fp1);
+            if (fp1_eq_fp2 || fp2_eq_fp1) {
+                System.out.printf("Should not but match (@%d, %s, %s):\n", i, fp1_eq_fp2?"->":"", fp2_eq_fp1?"<-":"");
+                System.out.println(rule2String(rule1));
+                System.out.println(rule2String(rule2));
+                failed++;
+            }
+        }
+        int passed = total_cases - failed;
+        System.out.printf("Passed: %.2f%%(%d/%d)\n", passed * 100.0 / total_cases, passed, total_cases);
+        assertEquals(0, failed);
     }
 
     @Test
-    void testGeneralizationOf1() {
-        /* #1: p(X, ?) :- q(?, X) */
-        /* #2: p(X, Y) :- q(Y, X) */
-        final Predicate head1 = new Predicate(NUM_P, 2);
-        head1.args[0] = Argument.variable(0);
-        head1.args[1] = Argument.EMPTY_VALUE;
-        final Predicate body1 = new Predicate(NUM_Q, 2);
-        body1.args[0] = Argument.EMPTY_VALUE;
-        body1.args[1] = Argument.variable(0);
-        final List<Predicate> rule1 = List.of(head1, body1);
-        assertEquals("p(X0,?):-q(?,X0)", rule2String(rule1));
-        final Fingerprint fingerprint1 = new Fingerprint(rule1);
-
-        final Predicate head2 = new Predicate(NUM_P, 2);
-        head2.args[0] = Argument.variable(0);
-        head2.args[1] = Argument.variable(1);
-        final Predicate body2 = new Predicate(NUM_Q, 2);
-        body2.args[0] = Argument.variable(1);
-        body2.args[1] = Argument.variable(0);
-        final List<Predicate> rule2 = List.of(head2, body2);
-        assertEquals("p(X0,X1):-q(X1,X0)", rule2String(rule2));
-        final Fingerprint fingerprint2 = new Fingerprint(rule2);
-
-        assertTrue(fingerprint1.generalizationOf(fingerprint2));
-        assertFalse(fingerprint2.generalizationOf(fingerprint1));
+    void testSpecOfFromRuleString() {
+        int failed = 0;
+        int total_cases = rule_pairs_spec_positive.size();
+        for (int i = 0; i < total_cases; i++) {
+            List<Predicate> rule1 = rule_pairs_spec_positive.get(i)[0];
+            List<Predicate> rule2 = rule_pairs_spec_positive.get(i)[1];
+            Fingerprint fp1 = new Fingerprint(rule1);
+            Fingerprint fp2 = new Fingerprint(rule2);
+            if (!fp1.generalizationOf(fp2)) {
+                System.out.printf("Should be specialization but not (@%d):\n", i);
+                System.out.println(rule2String(rule1));
+                System.out.println(rule2String(rule2));
+                failed++;
+            }
+        }
+        int passed = total_cases - failed;
+        System.out.printf("Passed: %.2f%%(%d/%d)\n", passed * 100.0 / total_cases, passed, total_cases);
+        assertEquals(0, failed);
     }
 
     @Test
-    void testGeneralizationOf2() {
-        /* #1: p(X, ?) :- q(?, X) */
-        /* #2: p(X, ?) :- q(Y, X), p(Y, ?) */
-        final Predicate head1 = new Predicate(NUM_P, 2);
-        head1.args[0] = Argument.variable(0);
-        head1.args[1] = Argument.EMPTY_VALUE;
-        final Predicate body1 = new Predicate(NUM_Q, 2);
-        body1.args[0] = Argument.EMPTY_VALUE;
-        body1.args[1] = Argument.variable(0);
-        final List<Predicate> rule1 = List.of(head1, body1);
-        assertEquals("p(X0,?):-q(?,X0)", rule2String(rule1));
-        final Fingerprint fingerprint1 = new Fingerprint(rule1);
-
-        final Predicate head2 = new Predicate(NUM_P, 2);
-        head2.args[0] = Argument.variable(0);
-        head2.args[1] = Argument.EMPTY_VALUE;
-        final Predicate body21 = new Predicate(NUM_Q, 2);
-        body21.args[0] = Argument.variable(1);
-        body21.args[1] = Argument.variable(0);
-        final Predicate body22 = new Predicate(NUM_P, 2);
-        body22.args[0] = Argument.variable(1);
-        body22.args[1] = Argument.EMPTY_VALUE;
-        final List<Predicate> rule2 = List.of(head2, body21, body22);
-        assertEquals("p(X0,?):-q(X1,X0),p(X1,?)", rule2String(rule2));
-        final Fingerprint fingerprint2 = new Fingerprint(rule2);
-
-        assertTrue(fingerprint1.generalizationOf(fingerprint2));
-        assertFalse(fingerprint2.generalizationOf(fingerprint1));
-    }
-
-    @Test
-    void testGeneralizationOf3() {
-        /* #1: p(X, ?) :- q(?, X) */
-        /* #2: p(X, ?) :- q(c, X) */
-        final Predicate head1 = new Predicate(NUM_P, 2);
-        head1.args[0] = Argument.variable(0);
-        head1.args[1] = Argument.EMPTY_VALUE;
-        final Predicate body1 = new Predicate(NUM_Q, 2);
-        body1.args[0] = Argument.EMPTY_VALUE;
-        body1.args[1] = Argument.variable(0);
-        final List<Predicate> rule1 = List.of(head1, body1);
-        assertEquals("p(X0,?):-q(?,X0)", rule2String(rule1));
-        final Fingerprint fingerprint1 = new Fingerprint(rule1);
-
-        final Predicate head2 = new Predicate(NUM_P, 2);
-        head2.args[0] = Argument.variable(0);
-        head2.args[1] = Argument.EMPTY_VALUE;
-        final Predicate body2 = new Predicate(NUM_Q, 2);
-        body2.args[0] = Argument.constant(NUM_C);
-        body2.args[1] = Argument.variable(0);
-        final List<Predicate> rule2 = List.of(head2, body2);
-        assertEquals("p(X0,?):-q(c,X0)", rule2String(rule2));
-        final Fingerprint fingerprint2 = new Fingerprint(rule2);
-
-        assertTrue(fingerprint1.generalizationOf(fingerprint2));
-        assertFalse(fingerprint2.generalizationOf(fingerprint1));
+    void testNotSpecOfFromRuleString() {
+        int failed = 0;
+        int total_cases = rule_pairs_spec_negative.size();
+        for (int i = 0; i < total_cases; i++) {
+            List<Predicate> rule1 = rule_pairs_spec_negative.get(i)[0];
+            List<Predicate> rule2 = rule_pairs_spec_negative.get(i)[1];
+            Fingerprint fp1 = new Fingerprint(rule1);
+            Fingerprint fp2 = new Fingerprint(rule2);
+            if (fp1.generalizationOf(fp2)) {
+                System.out.printf("Should not be specialization but is (@%d):\n", i);
+                System.out.println(rule2String(rule1));
+                System.out.println(rule2String(rule2));
+                failed++;
+            }
+        }
+        int passed = total_cases - failed;
+        System.out.printf("Passed: %.2f%%(%d/%d)\n", passed * 100.0 / total_cases, passed, total_cases);
+        assertEquals(0, failed);
     }
 
     @Test
@@ -477,7 +588,22 @@ class FingerprintTest {
         }
     }
 
-    private String rule2String(List<Predicate> rule) {
+    private static List<Predicate> parsedStructure2RuleStructure(List<ParsedPred> parsedStructure) {
+        List<Predicate> structure = new ArrayList<>(parsedStructure.size());
+        for (ParsedPred parsed_predicate: parsedStructure) {
+            Predicate predicate = new Predicate(map.mapName(parsed_predicate.functor), parsed_predicate.args.length);
+            for (int arg_idx = 0; arg_idx < predicate.arity(); arg_idx++) {
+                ParsedArg parsed_arg = parsed_predicate.args[arg_idx];
+                predicate.args[arg_idx] = (null == parsed_arg) ? Argument.EMPTY_VALUE : (
+                        (null == parsed_arg.name) ? Argument.variable(parsed_arg.id) : Argument.constant(map.mapName(parsed_arg.name))
+                );
+            }
+            structure.add(predicate);
+        }
+        return structure;
+    }
+
+    private static String rule2String(List<Predicate> rule) {
         StringBuilder builder = new StringBuilder();
         builder.append(rule.get(0).toString(map)).append(":-");
         if (1 < rule.size()) {

@@ -166,17 +166,17 @@ public class Hinter {
             /* Instantiate templates */
             for (int i = 0; i < kbRelationNums.length; i++) {
                 /* Create the initial rule */
-                Set<Fingerprint> fingerprint_cache = new HashSet<>();
-                Map<MultiSet<Integer>, Set<Fingerprint>> tabu_set = new HashMap<>();
                 int head_functor = kbRelationNums[i];
                 int head_arity = kbRelationArities[i];
-                CachedRule rule = new CachedRule(head_functor, head_arity, fingerprint_cache, tabu_set, kb);
 
                 /* Try each template */
+                Map<MultiSet<Integer>, Set<Fingerprint>> tabu_set = new HashMap<>();
                 for (Hint hint: hints) {
                     if (head_arity != hint.functorArities[0]) {
                         continue;
                     }
+                    Set<Fingerprint> fingerprint_cache = new HashSet<>();
+                    CachedRule rule = new CachedRule(head_functor, head_arity, fingerprint_cache, tabu_set, kb);
                     int totalFunctors = hint.functorRestrictionCounterLink.length;
                     int[] template_functor_instantiation = ArrayOperation.initArrayWithValue(totalFunctors, UNDETERMINED);
                     int[] restriction_counters = new int[hint.restrictions.size()];

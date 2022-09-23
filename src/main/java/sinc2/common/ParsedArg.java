@@ -52,4 +52,9 @@ public class ParsedArg {
     public int hashCode() {
         return Objects.hash(name, id);
     }
+
+    @Override
+    public String toString() {
+        return (null == name) ? "X" + id : name;
+    }
 }

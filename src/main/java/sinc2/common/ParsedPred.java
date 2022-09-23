@@ -22,6 +22,11 @@ public class ParsedPred {
         this.args = new ParsedArg[arity];
     }
 
+    public ParsedPred(ParsedPred another) {
+        this.functor = another.functor;
+        this.args = another.args.clone();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -35,5 +40,19 @@ public class ParsedPred {
         int result = Objects.hash(functor);
         result = 31 * result + Arrays.hashCode(args);
         return result;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder(functor);
+        builder.append('(');
+        if (0 < args.length) {
+            builder.append((null == args[0])? "?" : args[0]);
+            for (int i = 1; i < args.length; i++) {
+                builder.append(',').append((null == args[i])? "?" : args[i]);
+            }
+        }
+        builder.append(')');
+        return builder.toString();
     }
 }

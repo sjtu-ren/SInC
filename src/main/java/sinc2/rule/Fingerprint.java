@@ -18,56 +18,46 @@ import java.util.*;
  *   2.1 p(X,Y) :- f(X,?), f(Z,Y), f(?,Z)
  *   2.2 p(X,Y) :- f(X,Z), f(?,Y), f(Z,?)
  *
+ * The fingerprint structure may also incorrectly tell one rule is the specialization of another. For more examples,
+ * please refer to the test class.
+ *
  * @since 1.0
  */
 public class Fingerprint {
 
     /**
-     * The equivalence class of argument indicators with head labels
+     * Arguments in this class are equivalent classes. Each equivalent class is corresponding to some argument in the
+     * original rule.
      */
-    static class LabeledEquivalenceClass {
-        MultiSet<ArgIndicator> equivalenceClass = new MultiSet<>();
-        List<Integer> headLabels = null;
+    static class PredicateWithClass {
+        final int functor;
+        final MultiSet<ArgIndicator>[] classArgs;
 
-        public LabeledEquivalenceClass() {}
-
-        /**
-         * Add a label, i.e., an index in the head, to the equivalent class.
-         */
-        public void addLabel(int headIdx) {
-            if (null == headLabels) {
-                headLabels = new ArrayList<>();
-            }
-            headLabels.add(headIdx);
-        }
-
-        /**
-         * Add an indicator to the equivalence class.
-         */
-        public void addArgIndicator(ArgIndicator indicator) {
-            equivalenceClass.add(indicator);
+        public PredicateWithClass(int functor, int arity) {
+            this.functor = functor;
+            this.classArgs = new MultiSet[arity];
         }
 
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            LabeledEquivalenceClass that = (LabeledEquivalenceClass) o;
-            return Objects.equals(equivalenceClass, that.equivalenceClass) && Objects.equals(headLabels, that.headLabels);
+            PredicateWithClass that = (PredicateWithClass) o;
+            return functor == that.functor && Arrays.equals(classArgs, that.classArgs);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(equivalenceClass, headLabels);
+            int result = Objects.hash(functor);
+            result = 31 * result + Arrays.hashCode(classArgs);
+            return result;
         }
     }
 
-    /** The head functor of the rule */
-    protected final int headFunctor;
-
-    /** The labeled equivalence classes */
-    protected final MultiSet<LabeledEquivalenceClass> labeledEquivalenceClasses = new MultiSet<>();
-
+    /** The equivalence classes in this fingerprint */
+    protected final MultiSet<MultiSet<ArgIndicator>> equivalenceClasses = new MultiSet<>();
+    /** In this rule structure, each argument is the corresponding equivalence class */
+    protected final List<PredicateWithClass> classedStructure = new ArrayList<>();
     /** The rule that generates the fingerprint */
     protected final List<Predicate> rule;
 
@@ -78,8 +68,6 @@ public class Fingerprint {
      */
     public Fingerprint(List<Predicate> rule) {
         this.rule = rule;
-        final Predicate head_predicate = rule.get(0);
-        headFunctor = head_predicate.functor;
 
         /* Count the number of LVs */
         /* Assumption: The IDs for the variables start from 0 and are continuous */
@@ -91,65 +79,48 @@ public class Fingerprint {
                 }
             }
         }
-        LabeledEquivalenceClass[] lv_equiv_classes = new LabeledEquivalenceClass[max_lv_id+1];
+        MultiSet<ArgIndicator>[] lv_equiv_classes = new MultiSet[max_lv_id+1];
         for (int i = 0; i < lv_equiv_classes.length; i++) {
-            lv_equiv_classes[i] = new LabeledEquivalenceClass();
+            lv_equiv_classes[i] = new MultiSet<>();
         }
 
-        /* Add every argument to the corresponding equivalence class */
-        for (int arg_idx = 0; arg_idx < head_predicate.arity(); arg_idx++) {  // Convert the head first
-            int argument = head_predicate.args[arg_idx];
-            if (Argument.isEmpty(argument)) {
-                LabeledEquivalenceClass lec = new LabeledEquivalenceClass();
-                lec.addArgIndicator(ArgIndicator.getVariableIndicator(headFunctor, arg_idx));
-                lec.addLabel(arg_idx);
-                labeledEquivalenceClasses.add(lec);
-            } else if (Argument.isVariable(argument)) {
-                int var_id = Argument.decode(argument);
-                LabeledEquivalenceClass lec = lv_equiv_classes[var_id];
-                lec.addArgIndicator(ArgIndicator.getVariableIndicator(headFunctor, arg_idx));
-                lec.addLabel(arg_idx);
-            } else {
-                int constant = Argument.decode(argument);
-                LabeledEquivalenceClass lec = new LabeledEquivalenceClass();
-                lec.addArgIndicator(ArgIndicator.getVariableIndicator(headFunctor, arg_idx));
-                lec.addArgIndicator(ArgIndicator.getConstantIndicator(constant));
-                lec.addLabel(arg_idx);
-                labeledEquivalenceClasses.add(lec);
-            }
-        }
-        for (int pred_idx = Rule.FIRST_BODY_PRED_IDX; pred_idx < rule.size(); pred_idx++) {  // Convert the body
-            Predicate predicate = rule.get(pred_idx);
+        /* Construct equivalence classes */
+        for (Predicate predicate : rule) {
+            PredicateWithClass pred_with_class = new PredicateWithClass(predicate.functor, predicate.arity());
             for (int arg_idx = 0; arg_idx < predicate.arity(); arg_idx++) {
                 int argument = predicate.args[arg_idx];
                 if (Argument.isEmpty(argument)) {
-                    LabeledEquivalenceClass lec = new LabeledEquivalenceClass();
-                    lec.addArgIndicator(ArgIndicator.getVariableIndicator(predicate.functor, arg_idx));
-                    labeledEquivalenceClasses.add(lec);
+                    MultiSet<ArgIndicator> eqc = new MultiSet<>();
+                    eqc.add(ArgIndicator.getVariableIndicator(predicate.functor, arg_idx));
+                    equivalenceClasses.add(eqc);
+                    pred_with_class.classArgs[arg_idx] = eqc;
                 } else if (Argument.isVariable(argument)) {
                     int var_id = Argument.decode(argument);
-                    LabeledEquivalenceClass lec = lv_equiv_classes[var_id];
-                    lec.addArgIndicator(ArgIndicator.getVariableIndicator(predicate.functor, arg_idx));
+                    MultiSet<ArgIndicator> eqc = lv_equiv_classes[var_id];
+                    eqc.add(ArgIndicator.getVariableIndicator(predicate.functor, arg_idx));
+                    pred_with_class.classArgs[arg_idx] = eqc;
                 } else {
                     int constant = Argument.decode(argument);
-                    LabeledEquivalenceClass lec = new LabeledEquivalenceClass();
-                    lec.addArgIndicator(ArgIndicator.getVariableIndicator(predicate.functor, arg_idx));
-                    lec.addArgIndicator(ArgIndicator.getConstantIndicator(constant));
-                    labeledEquivalenceClasses.add(lec);
+                    MultiSet<ArgIndicator> eqc = new MultiSet<>();
+                    eqc.add(ArgIndicator.getVariableIndicator(predicate.functor, arg_idx));
+                    eqc.add(ArgIndicator.getConstantIndicator(constant));
+                    equivalenceClasses.add(eqc);
+                    pred_with_class.classArgs[arg_idx] = eqc;
                 }
             }
+            classedStructure.add(pred_with_class);
         }
 
         /* Add the equivalent classes for the LVs to the fingerprint */
-        labeledEquivalenceClasses.addAll(lv_equiv_classes);
+        equivalenceClasses.addAll(lv_equiv_classes);
     }
 
-    public int getHeadFunctor() {
-        return headFunctor;
+    public MultiSet<MultiSet<ArgIndicator>> getEquivalenceClasses() {
+        return equivalenceClasses;
     }
 
-    public MultiSet<LabeledEquivalenceClass> getLabeledEquivalenceClasses() {
-        return labeledEquivalenceClasses;
+    public List<PredicateWithClass> getClassedStructure() {
+        return classedStructure;
     }
 
     /**
@@ -159,17 +130,34 @@ public class Fingerprint {
      * @return Ture if the rule of this fingerprint is the generalization of the other.
      */
     public boolean generalizationOf(Fingerprint another) {
-        final Set<LabeledEquivalenceClass> this_eqv_classes = labeledEquivalenceClasses.distinctValues();
-        final Set<LabeledEquivalenceClass> another_eav_classes = another.labeledEquivalenceClasses.distinctValues();
-        for (LabeledEquivalenceClass this_eqv_cls: this_eqv_classes) {
-            boolean found_superset = false;
-            for (LabeledEquivalenceClass another_eqv_cls: another_eav_classes) {
-                if (this_eqv_cls.equivalenceClass.subsetOf(another_eqv_cls.equivalenceClass)) {
-                    found_superset = true;
+        if (!generalizationOf(classedStructure.get(0), another.classedStructure.get(0))) {
+            return false;
+        }
+        for (int pred_idx = Rule.FIRST_BODY_PRED_IDX; pred_idx < classedStructure.size(); pred_idx++) {
+            PredicateWithClass predicate = classedStructure.get(pred_idx);
+            boolean found_specialization = false;
+            for (int pred_idx_another = Rule.FIRST_BODY_PRED_IDX; pred_idx_another < another.classedStructure.size(); pred_idx_another++) {
+                if (generalizationOf(predicate, another.classedStructure.get(pred_idx_another))) {
+                    found_specialization = true;
                     break;
                 }
             }
-            if (!found_superset) {
+            if (!found_specialization) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Check whether "predicate" is the generalization of "specializedPredicate".
+     */
+    protected boolean generalizationOf(PredicateWithClass predicate, PredicateWithClass specializedPredicate) {
+        if (predicate.functor != specializedPredicate.functor) {
+            return false;
+        }
+        for (int arg_idx = 0; arg_idx < predicate.classArgs.length; arg_idx++) {
+            if (!predicate.classArgs[arg_idx].subsetOf(specializedPredicate.classArgs[arg_idx])) {
                 return false;
             }
         }
@@ -181,11 +169,12 @@ public class Fingerprint {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Fingerprint that = (Fingerprint) o;
-        return headFunctor == that.headFunctor && Objects.equals(labeledEquivalenceClasses, that.labeledEquivalenceClasses);
+        return Objects.equals(classedStructure.get(0), that.classedStructure.get(0)) &&
+                Objects.equals(equivalenceClasses, that.equivalenceClasses);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(headFunctor, labeledEquivalenceClasses);
+        return Objects.hash(classedStructure.get(0), equivalenceClasses);
     }
 }

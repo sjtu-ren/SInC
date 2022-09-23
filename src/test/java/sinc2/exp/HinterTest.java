@@ -116,12 +116,39 @@ class HinterTest {
     void testRun2() throws KbException, IOException, ExperimentException, RuleParseException {
         /* Hints:
          *   p(X,Y):-q(X,Y);[(p,q)]
+         *   p(X,Y):-q(Y,X);[]
          *   p(X,Y,Z):-q(X,Z),r(Y,Z);[(p,r),(q,r)]
+         *   p(X,Y):-q(X,Z),r(Z,Y);[]
          *
          * Rules:
          *   parent(X,Y):-father(X,Y)
          *   parent(X,Y):-mother(X,Y)
+         *   grandparent(X,Y):-grandfather(X,Y)
+         *   grandparent(X,Y):-grandmother(X,Y)
+         *
+         *   child(X,Y):-parent(Y,X)
+         *   parent(X,Y):-child(Y,X)
+         *   child(X,Y):-father(Y,X)
+         *   child(X,Y):-mother(Y,X)
+         *   grandchild(X,Y):-grandparent(Y,X)
+         *   grandparent(X,Y):-grandchild(Y,X)
+         *   grandchild(X,Y):-grandfather(Y,X)
+         *   grandchild(X,Y):-grandmother(Y,X)
+         *
          *   family(X,Y,Z):-father(X,Z),mother(Y,Z)
+         *
+         *   grandparent(X,Y):-parent(X,Z),parent(Z,Y)
+         *   grandparent(X,Y):-parent(X,Z),mother(Z,Y)
+         *   grandparent(X,Y):-parent(X,Z),father(Z,Y)
+         *   grandparent(X,Y):-father(X,Z),parent(Z,Y)
+         *   grandparent(X,Y):-mother(X,Z),parent(Z,Y)
+         *   grandfather(X,Y):-father(X,Z),father(Z,Y)
+         *   grandfather(X,Y):-father(X,Z),mother(Z,Y)
+         *   grandfather(X,Y):-father(X,Z),parent(Z,Y)
+         *   grandmother(X,Y):-mother(X,Z),father(Z,Y)
+         *   grandmother(X,Y):-mother(X,Z),mother(Z,Y)
+         *   grandmother(X,Y):-mother(X,Z),parent(Z,Y)
+         *   grandchild(X,Y):-child(X,Z),child(Z,Y)
          */
         final String KB_NAME = "HinterTest-" + UUID.randomUUID();
         final String FAMILY = "family";
@@ -209,8 +236,8 @@ class HinterTest {
         /* Create hint file */
         File hint_file = Paths.get(MEM_DIR, HINT_FILE_NAME).toFile();
         PrintWriter hint_writer = new PrintWriter(hint_file);
-        hint_writer.println(0.2);
-        hint_writer.println(0.8);
+        hint_writer.println(0.49);
+        hint_writer.println(0.7);
         hint_writer.println("p(X,Y):-q(X,Y);[(p,q)]");
         hint_writer.println("p(X,Y):-q(Y,X);[]");
         hint_writer.println("p(X,Y,Z):-q(X,Z),r(Y,Z);[(p,r),(q,r)]");
@@ -239,6 +266,10 @@ class HinterTest {
         expected_rules.add(parseBareRule("grandchild(X,Y):-grandmother(Y,X)", kb.getNumerationMap(), cache, tabu));
         expected_rules.add(parseBareRule("family(X,Y,Z):-father(X,Z),mother(Y,Z)", kb.getNumerationMap(), cache, tabu));
         expected_rules.add(parseBareRule("grandparent(X,Y):-parent(X,Z),parent(Z,Y)", kb.getNumerationMap(), cache, tabu));
+        expected_rules.add(parseBareRule("grandparent(X,Y):-parent(X,Z),father(Z,Y)", kb.getNumerationMap(), cache, tabu));
+        expected_rules.add(parseBareRule("grandparent(X,Y):-parent(X,Z),mother(Z,Y)", kb.getNumerationMap(), cache, tabu));
+        expected_rules.add(parseBareRule("grandparent(X,Y):-father(X,Z),parent(Z,Y)", kb.getNumerationMap(), cache, tabu));
+        expected_rules.add(parseBareRule("grandparent(X,Y):-mother(X,Z),parent(Z,Y)", kb.getNumerationMap(), cache, tabu));
         expected_rules.add(parseBareRule("grandfather(X,Y):-father(X,Z),father(Z,Y)", kb.getNumerationMap(), cache, tabu));
         expected_rules.add(parseBareRule("grandfather(X,Y):-father(X,Z),mother(Z,Y)", kb.getNumerationMap(), cache, tabu));
         expected_rules.add(parseBareRule("grandfather(X,Y):-father(X,Z),parent(Z,Y)", kb.getNumerationMap(), cache, tabu));
@@ -264,13 +295,19 @@ class HinterTest {
     @Test
     void testRun3() throws KbException, IOException, ExperimentException, RuleParseException {
         /* Hints:
-         *   p(X,Y):-q(X,Y);[(p,q)]
          *   p(X,Y,Z):-q(X,Z),r(Y,Z);[(p,r),(q,r)]
+         *   p(X,Y):-q(X,Z),r(Y,Z);[]
+         *   p(X,Y):-q(Z,X),r(Z,Y);[]
          *
          * Rules:
-         *   parent(X,Y):-father(X,Y)
-         *   parent(X,Y):-mother(X,Y)
-         *   family(X,Y,Z):-father(X,Z),mother(Y,Z)
+         -*   family(X,Y,Z):-father(X,Z),mother(Y,Z)
+         *
+         -*   couple(X,Y):-father(X,Z),mother(Y,Z)
+         -*   father(X,Y):-couple(X,Z),child(Y,Z)
+         *   child(X,Y):-child(X,Z),couple(Y,Z)
+         *
+         -*   child(X,Y):-father(Z,X),couple(Z,Y)
+         -*   mother(X,Y):-couple(Z,X),father(Z,Y)
          */
         final String KB_NAME = "HinterTest-" + UUID.randomUUID();
         final String FAMILY = "family";
@@ -322,8 +359,8 @@ class HinterTest {
         /* Create hint file */
         File hint_file = Paths.get(MEM_DIR, HINT_FILE_NAME).toFile();
         PrintWriter hint_writer = new PrintWriter(hint_file);
-        hint_writer.println(0.2);
-        hint_writer.println(0.8);
+        hint_writer.println(0.0);
+        hint_writer.println(0.0);
         //hint_writer.println("p(X,Y):-q(X,Y);[(p,q)]");
         hint_writer.println("p(X,Y,Z):-q(X,Z),r(Y,Z);[(p,r),(q,r)]");
         hint_writer.println("p(X,Y):-q(X,Z),r(Y,Z);[]");
@@ -345,7 +382,7 @@ class HinterTest {
         expected_rules.add(parseBareRule("child(X,Y):-child(X,Z),couple(Y,Z)", kb.getNumerationMap(), cache, tabu));
         expected_rules.add(parseBareRule("child(X,Y):-father(Z,X),couple(Z,Y)", kb.getNumerationMap(), cache, tabu));
         expected_rules.add(parseBareRule("mother(X,Y):-couple(Z,X),father(Z,Y)", kb.getNumerationMap(), cache, tabu));
-        expected_rules.add(parseBareRule("couple(X,Y):-child(Z,X),child(Z,Y)", kb.getNumerationMap(), cache, tabu));
+//        expected_rules.add(parseBareRule("couple(X,Y):-child(Z,X),child(Z,Y)", kb.getNumerationMap(), cache, tabu));
         //expected_rules.add(parseBareRule("child(X,Y):-mother(Z,X),couple(Y,Z)", kb.getNumerationMap(), cache, tabu));
         //expected_rules.add(parseBareRule("father(X,Y):-couple(X,Z),mother(Z,Y)", kb.getNumerationMap(), cache, tabu));
         File rules_file = Hinter.getRulesFilePath(hint_file.getAbsolutePath(), KB_NAME).toFile();
