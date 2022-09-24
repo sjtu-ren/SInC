@@ -3,6 +3,7 @@ package sinc2.impl.base;
 import sinc2.RelationMiner;
 import sinc2.SInC;
 import sinc2.SincConfig;
+import sinc2.common.SincException;
 
 /**
  * A basic implementation of SInC. Rule mining are with compact caching and tabu prunning.
@@ -15,7 +16,7 @@ public class SincBasic extends SInC {
      *
      * @param config The configurations
      */
-    public SincBasic(SincConfig config) {
+    public SincBasic(SincConfig config) throws SincException {
         super(config);
     }
 

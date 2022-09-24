@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import sinc2.SincConfig;
 import sinc2.common.Argument;
 import sinc2.common.Predicate;
+import sinc2.common.SincException;
 import sinc2.kb.CompressedKb;
 import sinc2.kb.KbException;
 import sinc2.kb.NumeratedKb;
@@ -25,7 +26,7 @@ class SincBasicTest {
     static final String TMP_DIR = "/dev/shm/";
 
     @Test
-    void testTinyHypothesis() throws KbException, IOException {
+    void testTinyHypothesis() throws KbException, IOException, SincException {
         /*
          * Hypothesis:
          *      gender(X, male) <- father(X, ?)
@@ -100,7 +101,7 @@ class SincBasicTest {
     }
 
     @Test
-    void testSimpleHypothesis() throws KbException, IOException {
+    void testSimpleHypothesis() throws KbException, IOException, SincException {
         /*
          * Hypothesis:
          *      gender(X,male):-father(X,?).

@@ -1,6 +1,7 @@
 package sinc2;
 
 import sinc2.common.Predicate;
+import sinc2.common.SincException;
 import sinc2.kb.*;
 import sinc2.rule.Rule;
 import sinc2.util.graph.FeedbackVertexSetSolver;
@@ -58,11 +59,16 @@ public abstract class SInC {
      * Create a SInC object with configurations.
      *
      * @param config The configurations
+     * @throws SincException Dump path creation failure
      */
-    public SInC(SincConfig config) {
+    public SInC(SincConfig config) throws SincException {
         this.config = config;
 
         /* Create writer objects to log and std output files */
+        File dump_kb_dir = Paths.get(config.dumpPath, config.dumpName).toFile();
+        if (!dump_kb_dir.exists() && !dump_kb_dir.mkdirs()) {
+            throw new SincException("Dump path creation failed.");
+        }
         PrintWriter writer;
         try {
             writer = new PrintWriter(Paths.get(config.dumpPath, config.dumpName, LOG_FILE_NAME).toFile());
@@ -164,10 +170,27 @@ public abstract class SInC {
 
     protected abstract RelationMiner createRelationMiner(int targetRelationNum);
 
+    protected void showConfig() {
+        logger.printf("Base Path:\t%s\n", config.basePath);
+        logger.printf("KB Name:\t%s\n", config.kbName);
+        logger.printf("Dump Path:\t%s\n", config.dumpPath);
+        logger.printf("Dump Name:\t%s\n", config.dumpName);
+        logger.printf("Beamwidth:\t%s\n", config.beamwidth);
+        logger.printf("Threads:\t%s\n", config.threads);
+        logger.printf("Eval Metric:\t%s\n", config.evalMetric);
+        logger.printf("Min Fact Coverage:\t%s\n", config.minFactCoverage);
+        logger.printf("Min Constant Coverage:\t%s\n", config.minConstantCoverage);
+        logger.printf("Stop Compression Ratio:\t%s\n", config.stopCompressionRatio);
+        logger.printf("Validation:\t%s\n", config.validation);
+        logger.println();
+    }
+
     /**
      * The compress procedure.
      */
     private void compress() {
+        showConfig();
+
         /* Load KB */
         try {
             kb = loadKb();
