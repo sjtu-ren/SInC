@@ -1,5 +1,6 @@
 package sinc2;
 
+import sinc2.common.DebugLevel;
 import sinc2.common.Predicate;
 import sinc2.common.SincException;
 import sinc2.kb.*;
@@ -293,6 +294,9 @@ public abstract class SInC {
         monitor.validationTime = time_validated - time_kb_dumped;
 
         /* Todo: Upload to neo4j in debug mode */
+        if (DebugLevel.UPLOAD <= DebugLevel.LEVEL) {
+            logDebug(DebugLevel.UPLOAD, "Upload to Neo4j");
+        }
         long time_neo4j = System.currentTimeMillis();
         monitor.neo4jTime = time_neo4j - time_validated;
 
@@ -306,6 +310,13 @@ public abstract class SInC {
 
     protected void logError(String msg) {
         logger.print("[ERROR] ");
+        logger.println(msg);
+    }
+
+    protected void logDebug(int level, String msg) {
+        logger.print("[DEBUG ");
+        logger.print(level);
+        logger.print("] ");
         logger.println(msg);
     }
 

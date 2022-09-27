@@ -1,9 +1,6 @@
 package sinc2;
 
-import sinc2.common.ArgLocation;
-import sinc2.common.Argument;
-import sinc2.common.InterruptedSignal;
-import sinc2.common.Predicate;
+import sinc2.common.*;
 import sinc2.kb.KbException;
 import sinc2.kb.KbRelation;
 import sinc2.kb.NumeratedKb;
@@ -97,8 +94,10 @@ public abstract class RelationMiner {
                 for (int i = 0; i < beamwidth && null != beams[i]; i++) {
                     Rule r = beams[i];
                     selectAsBeam(r);
-                    logger.printf("Extend: %s\n", r.toString(kb.getNumerationMap()));
-                    logger.flush();
+                    if (DebugLevel.VERBOSE <= DebugLevel.LEVEL) {
+                        logger.printf("Extend: %s\n", r.toString(kb.getNumerationMap()));
+                        logger.flush();
+                    }
 
                     /* Find the specializations and generalizations of rule 'r' */
                     int specializations_cnt = findSpecializations(r, best_candidates);
@@ -378,11 +377,18 @@ public abstract class RelationMiner {
      */
     public void run() throws KbException {
         Rule rule;
+        int covered_facts = 0;
+        final int total_facts = kb.getRelation(targetRelation).totalRecords();
         while (!SInC.interrupted && (null != (rule = findRule()))) {
-            logger.printf("Found: %s\n", rule.toDumpString(kb.getNumerationMap()));
             hypothesis.add(rule);
             updateKbAndDependencyGraph(rule);
+            covered_facts += rule.getEval().getPosEtls();
+            logger.printf(
+                    "Found (Coverage: %.2f%%, %d/%d): %s\n", covered_facts * 100.0 / total_facts, covered_facts, total_facts,
+                    rule.toDumpString(kb.getNumerationMap())
+            );
         }
+        logger.println("Done");
     }
 
     public Set<Record> getCounterexamples() {
