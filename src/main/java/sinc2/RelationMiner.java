@@ -97,7 +97,7 @@ public abstract class RelationMiner {
                 for (int i = 0; i < beamwidth && null != beams[i]; i++) {
                     Rule r = beams[i];
                     selectAsBeam(r);
-                    logger.printf("Extend: %s\n", r.toDumpString(kb.getNumerationMap()));
+                    logger.printf("Extend: %s\n", r.toString(kb.getNumerationMap()));
                     logger.flush();
 
                     /* Find the specializations and generalizations of rule 'r' */

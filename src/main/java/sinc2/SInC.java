@@ -54,6 +54,8 @@ public abstract class SInC {
      * out-neighbours.
      */
     protected final Map<GraphNode<Predicate>, Set<GraphNode<Predicate>>> dependencyGraph = new HashMap<>();
+    /** The performance monitor */
+    protected final PerformanceMonitor monitor = new PerformanceMonitor();
 
     /**
      * Create a SInC object with configurations.
@@ -140,7 +142,10 @@ public abstract class SInC {
             for (GraphNode<Predicate> node: fvs) {
                 compressedKb.addRecord(node.content.functor, node.content.args);
             }
+            monitor.sccVertices += scc.size();
+            monitor.fvsVertices += fvs.size();
         }
+        monitor.sccNumber = sccs.size();
     }
 
     /**
@@ -161,7 +166,7 @@ public abstract class SInC {
     }
 
     protected void showMonitor() {
-        logger.flush();
+        monitor.show(logger);
     }
 
     public CompressedKb getCompressedKb() {
@@ -192,53 +197,78 @@ public abstract class SInC {
         showConfig();
 
         /* Load KB */
+        long time_start = System.currentTimeMillis();
         try {
             kb = loadKb();
         } catch (KbException | IOException e) {
             e.printStackTrace(logger);
-            logger.println("[ERROR] KB Load failed, abort.");
+            logError("KB load failed, abort.");
             return;
         }
+        monitor.kbSize = kb.totalRecords();
+        monitor.kbFunctors = kb.totalRelations();
+        monitor.kbConstants = kb.getAllConstants().size();
         compressedKb = new CompressedKb(config.dumpName, kb);
+        long time_kb_loaded = System.currentTimeMillis();
+        monitor.kbLoadTime = time_kb_loaded - time_start;
 
         /* Run relation miners on each relation */
         try {
             final List<Integer> target_relations = getTargetRelations();
-            for (Integer relation_num: target_relations) {
+            for (int i = 0; i < target_relations.size(); i++) {
+                Integer relation_num = target_relations.get(i);
                 RelationMiner relation_miner = createRelationMiner(relation_num);
                 relation_miner.run();
                 KbRelation ce_relation = compressedKb.getCounterexampleRelation(relation_num);
                 ce_relation.addRecords(relation_miner.getCounterexamples());
                 for (Rule r: relation_miner.getHypothesis()) {
                     compressedKb.addHypothesisRule(r);
+                    monitor.hypothesisSize += r.length();
                 }
+                logInfo(String.format("Relation mining done (%d/%d): %s", i+1, target_relations.size(), kb.num2Name(relation_num)));
+                monitor.hypothesisRuleNumber += relation_miner.getHypothesis().size();
             }
         } catch (KbException e) {
             e.printStackTrace(logger);
-            logger.println("[ERROR] Relation Miner failed. Interrupt");
+            logError("Relation Miner failed. Interrupt");
             interrupted = true;
         }
+        long time_hypothesis_found = System.currentTimeMillis();
+        monitor.hypothesisMiningTime = time_hypothesis_found - time_kb_loaded;
 
         /* Dependency analysis */
         try {
             dependencyAnalysis();
         } catch (KbException e) {
             e.printStackTrace(logger);
-            logger.println("[ERROR] Dependency Analysis failed. Abort.");
+            logError("Dependency Analysis failed. Abort.");
 
             /* Log the hypothesis */
-            logger.println("\n### Hypothesis Found ###");
+            logInfo("\n### Hypothesis Found ###");
             for (Rule rule : compressedKb.getHypothesis()) {
-                logger.println(rule);
+                logInfo(rule.toString(kb.getNumerationMap()));
             }
             logger.println();
+
+            monitor.necessaryFacts = compressedKb.totalNecessaryRecords();
+            monitor.counterexamples = compressedKb.totalCounterexamples();
+            monitor.supplementaryConstants = compressedKb.totalSupplementaryConstants();
+            long time_dependency_resolved = System.currentTimeMillis();
+            monitor.dependencyAnalysisTime = time_dependency_resolved - time_hypothesis_found;
+            monitor.totalTime = time_dependency_resolved - time_start;
+            showMonitor();
             return;
         }
+        monitor.necessaryFacts = compressedKb.totalNecessaryRecords();
+        monitor.counterexamples = compressedKb.totalCounterexamples();
+        monitor.supplementaryConstants = compressedKb.totalSupplementaryConstants();
+        long time_dependency_resolved = System.currentTimeMillis();
+        monitor.dependencyAnalysisTime = time_dependency_resolved - time_hypothesis_found;
 
         /* Log the hypothesis */
-        logger.println("\n### Hypothesis Found ###");
+        logInfo("\n### Hypothesis Found ###");
         for (Rule rule : compressedKb.getHypothesis()) {
-            logger.println(rule);
+            logInfo(rule.toString(kb.getNumerationMap()));
         }
         logger.println();
 
@@ -247,21 +277,36 @@ public abstract class SInC {
             dumpCompressedKb();
         } catch (IOException e) {
             e.printStackTrace(logger);
-            logger.println("[ERROR] Compressed KB dump failed. Abort.");
+            logError("Compressed KB dump failed. Abort.");
             return;
         }
+        long time_kb_dumped = System.currentTimeMillis();
+        monitor.dumpTime = time_kb_dumped - time_dependency_resolved;
 
         /* 检查结果 */
         if (config.validation) {
             if (!recover()) {
-                logger.println("[ERROR] Validation Failed");
+                logError("Validation Failed");
             }
         }
-
-        showMonitor();
+        long time_validated = System.currentTimeMillis();
+        monitor.validationTime = time_validated - time_kb_dumped;
 
         /* Todo: Upload to neo4j in debug mode */
+        long time_neo4j = System.currentTimeMillis();
+        monitor.neo4jTime = time_neo4j - time_validated;
 
+        monitor.totalTime = time_neo4j - time_start;
+        showMonitor();
+    }
+
+    protected void logInfo(String msg) {
+        logger.println(msg);
+    }
+
+    protected void logError(String msg) {
+        logger.print("[ERROR] ");
+        logger.println(msg);
     }
 
     /**
@@ -290,10 +335,10 @@ public abstract class SInC {
             interrupted = true;
             try {
                 task.join();
-                logger.flush();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                e.printStackTrace(logger);
             }
+            logger.flush();
         }
     }
 }
