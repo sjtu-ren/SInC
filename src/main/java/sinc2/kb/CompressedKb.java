@@ -65,7 +65,7 @@ public class CompressedKb extends NumeratedKb {
     public CompressedKb(String name, NumeratedKb originalKb) {
         super(name);
         this.originalKb = originalKb;
-        this.numMap = new NumerationMap(originalKb.numMap.numMap);
+        this.numMap = new NumerationMap(originalKb.numMap);
         /* Create relations */
         for (KbRelation relation: originalKb.getRelations()) {
             KbRelation necessary_relation = new KbRelation(relation.getName(), relation.getNumeration(), relation.getArity());

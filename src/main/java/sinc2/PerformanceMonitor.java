@@ -32,7 +32,7 @@ public class PerformanceMonitor {
 
 
     public void show(PrintWriter writer) {
-        writer.println("### Monitored Performance Info ###\n");
+        writer.println("\n### Monitored Performance Info ###\n");
         writer.println("--- Time Cost ---");
         writer.printf(
                 "(ms) %10s %10s %10s %10s %10s %10s %10s\n",

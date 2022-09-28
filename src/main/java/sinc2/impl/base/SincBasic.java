@@ -3,6 +3,7 @@ package sinc2.impl.base;
 import sinc2.RelationMiner;
 import sinc2.SInC;
 import sinc2.SincConfig;
+import sinc2.SincRecovery;
 import sinc2.common.SincException;
 
 /**
@@ -18,6 +19,11 @@ public class SincBasic extends SInC {
      */
     public SincBasic(SincConfig config) throws SincException {
         super(config);
+    }
+
+    @Override
+    protected SincRecovery createRecovery() {
+        return new SincRecoveryBasic();
     }
 
     @Override

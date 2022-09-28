@@ -105,7 +105,11 @@ public class CachedRule extends Rule {
         for (int i = 0; i < usedLimitedVars(); i++) {
             plvList.add(null);
         }
+        constructCache();
+        this.eval = calculateEval();
+    }
 
+    protected void constructCache() {
         /* Find the variable locations for "posCache" and "allCache" */
         class ConstRestriction {    // This class is used for representing constant restrictions in the rule
             public final int argIdx;    // The argument index of the constant in a predicate
@@ -238,8 +242,6 @@ public class CachedRule extends Rule {
                 posCache = splitCacheEntriesByLvs(posCache, lv_id_locs_with_head[vid]);
             }
         }
-
-        this.eval = calculateEval();
     }
 
     /**
@@ -252,7 +254,8 @@ public class CachedRule extends Rule {
      */
     protected List<CacheEntry> splitCacheEntriesByLvs(List<CacheEntry> cache, List<ArgLocation> lvLocations) {
         /* Group arguments indices in predicates */
-        List<Integer>[] lv_locs_in_preds = new List[structure.size()];  // Predicate index as the array index
+        final int predicates_in_rule = structure.size();
+        List<Integer>[] lv_locs_in_preds = new List[predicates_in_rule];  // Predicate index as the array index
         for (ArgLocation lv_loc: lvLocations) {
             if (null == lv_locs_in_preds[lv_loc.predIdx]) {
                 lv_locs_in_preds[lv_loc.predIdx] = new ArrayList<>();
@@ -264,10 +267,10 @@ public class CachedRule extends Rule {
         List<CacheEntry> new_cache = new ArrayList<>();
         for (CacheEntry cache_entry: cache) {
             /* Build a value index for each predicate where the variable locates */
-            Map<Integer, Set<Record>>[] lv_indices = new Map[structure.size()]; // Predicate index as the array index
-            int min_index_entries = kb.totalRecords() + 1;
+            Map<Integer, Set<Record>>[] lv_indices = new Map[predicates_in_rule]; // Predicate index as the array index
+            int min_index_entries = Integer.MAX_VALUE;
             int min_index_idx = -1;
-            for (int pred_idx = HEAD_PRED_IDX; pred_idx < structure.size(); pred_idx++) {
+            for (int pred_idx = HEAD_PRED_IDX; pred_idx < predicates_in_rule; pred_idx++) {
                 List<Integer> lv_arg_idxs = lv_locs_in_preds[pred_idx];
                 if (null != lv_arg_idxs) {
                     if (1 == lv_arg_idxs.size()) {
@@ -328,7 +331,7 @@ public class CachedRule extends Rule {
             /* Split cache entries via shared values */
             for (Integer shared_arg: shared_args) {
                 CacheEntry new_entry = new CacheEntry(cache_entry);
-                for (int pred_idx = HEAD_PRED_IDX; pred_idx < structure.size(); pred_idx++) {
+                for (int pred_idx = HEAD_PRED_IDX; pred_idx < predicates_in_rule; pred_idx++) {
                     if (null != lv_indices[pred_idx]) {
                         CompliedBlock cb = cache_entry.entry.get(pred_idx);
                         CompliedBlock new_cb = new CompliedBlock(cb.relNum, cb.partAsgnRecord.clone(), lv_indices[pred_idx].get(shared_arg));

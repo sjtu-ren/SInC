@@ -155,9 +155,16 @@ public abstract class SInC {
      * @return Whether the compressed KB can be recovered to the original one.
      */
     public boolean recover() {
-        /* Todo: Implement Here */
-        return false;
+        try {
+            NumeratedKb recovered_kb = createRecovery().recover(compressedKb, kb.getName());
+            return kb.equals(recovered_kb);
+        } catch (KbException e) {
+            e.printStackTrace(logger);
+            return false;
+        }
     }
+
+    abstract protected SincRecovery createRecovery();
 
     /**
      * Dump the compressed KB

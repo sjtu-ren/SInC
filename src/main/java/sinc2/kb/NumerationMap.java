@@ -25,21 +25,17 @@ import java.util.*;
 public class NumerationMap {
     /** The starting number of map files. */
     public static final int MAP_FILE_NUMERATION_START = 1;
-
     /** The maximum number of map entries in one map file. */
     public static final int MAX_MAP_ENTRIES = 1000000;
-
     /** The number that should not be mapped to any name string */
     public static final int NUM_NULL = 0;
 
-    /* The map from name strings to integers */
-    protected Map<String, Integer> numMap = new HashMap<>();
-
-    /* The map from integers to name strings */
+    /** The map from name strings to integers */
+    protected Map<String, Integer> numMap;
+    /** The map from integers to name strings */
     protected List<String> numArray;
-
-    /* The set of numbers which are smaller than the maximum mapped integer but are not mapped yet, organized as a min-heap */
-    protected PriorityQueue<Integer> freeNums = new PriorityQueue<>();
+    /** The set of numbers which are smaller than the maximum mapped integer but are not mapped yet, organized as a min-heap */
+    protected PriorityQueue<Integer> freeNums;
 
     /**
      * Get the map file path.
@@ -67,6 +63,7 @@ public class NumerationMap {
     public NumerationMap(Map<String, Integer> map) {
         /* Load the string-to-integer map */
         this.numMap = new HashMap<>(map);
+        freeNums = new PriorityQueue<>();
 
         /* Create the integer-to-string map */
         int capacity = Collections.max(map.values()) + 1;
@@ -95,6 +92,8 @@ public class NumerationMap {
         /* Load the string-to-integer map */
         File kb_dir = new File(kbPath);
         File[] map_files = kb_dir.listFiles((dir, name) -> name.matches("map[0-9]+.tsv$"));
+        numMap = new HashMap<>();
+        freeNums = new PriorityQueue<>();
         loadHandler(map_files);
     }
 
@@ -105,7 +104,18 @@ public class NumerationMap {
      * @param fileName The name of the file
      */
     public NumerationMap(String kbPath, String fileName) {
+        numMap = new HashMap<>();
+        freeNums = new PriorityQueue<>();
         loadHandler(new File[]{Paths.get(kbPath, fileName).toFile()});
+    }
+
+    /**
+     * Copy from another numeration map.
+     */
+    public NumerationMap(NumerationMap another) {
+        this.numMap = new HashMap<>(another.numMap);
+        this.numArray = new ArrayList<>(another.numArray);
+        this.freeNums = new PriorityQueue<>(another.freeNums);
     }
 
     /**
@@ -113,7 +123,7 @@ public class NumerationMap {
      *
      * @param mapFiles The files that should be loaded
      */
-    public void loadHandler(File[] mapFiles) {
+    protected void loadHandler(File[] mapFiles) {
         if (null == mapFiles || 0 == mapFiles.length) {
             /* Initialize as an empty map */
             numArray = new ArrayList<>();
@@ -331,5 +341,13 @@ public class NumerationMap {
             }
         }
         return new Int2NameItr(numArray);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        NumerationMap that = (NumerationMap) o;
+        return Objects.equals(numMap, that.numMap);
     }
 }

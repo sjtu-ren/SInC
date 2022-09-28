@@ -43,9 +43,9 @@ public class KbRelation implements Iterable<Record> {
     /** The arity of the relation */
     protected final int arity;
     /** The set of the records */
-    protected final Set<Record> records = new HashSet<>();
+    protected final Set<Record> records;
     /** The set of entailed records */
-    protected final Set<Record> entailedRecords = new HashSet<>();
+    protected final Set<Record> entailedRecords;
     /** The index of each argument value */
     protected final Map<Integer, Set<Record>>[] argumentIndices;
     /** Promising constants for each argument */
@@ -114,6 +114,8 @@ public class KbRelation implements Iterable<Record> {
         this.name = name;
         this.numeration = numeration;
         this.arity = arity;
+        this.records = new HashSet<>();
+        this.entailedRecords = new HashSet<>();
         this.argumentIndices = new Map[arity];
         for (int i = 0; i < arity; i++) {
             argumentIndices[i] = new HashMap<>();
@@ -138,6 +140,8 @@ public class KbRelation implements Iterable<Record> {
         this.name = name;
         this.numeration = numeration;
         this.arity = arity;
+        this.records = new HashSet<>();
+        this.entailedRecords = new HashSet<>();
         this.argumentIndices = new Map[arity];
         for (int i = 0; i < arity; i++) {
             argumentIndices[i] = new HashMap<>();
@@ -165,6 +169,8 @@ public class KbRelation implements Iterable<Record> {
         this.name = name;
         this.numeration = numeration;
         this.arity = arity;
+        this.records = new HashSet<>();
+        this.entailedRecords = new HashSet<>();
         this.argumentIndices = new Map[arity];
         for (int i = 0; i < arity; i++) {
             argumentIndices[i] = new HashMap<>();
@@ -172,6 +178,24 @@ public class KbRelation implements Iterable<Record> {
 
         File rel_file = Paths.get(kbPtah, fileName).toFile();
         loadHandler(rel_file, map);
+    }
+
+    /**
+     * Copy from another relation.
+     */
+    public KbRelation(KbRelation another) {
+        this.name = another.name;
+        this.numeration = another.numeration;
+        this.arity = another.arity;
+        this.records = new HashSet<>(another.records);
+        this.entailedRecords = new HashSet<>(another.entailedRecords);
+        this.argumentIndices = new Map[another.argumentIndices.length];
+        for (int i = 0; i < argumentIndices.length; i++) {
+            this.argumentIndices[i] = new HashMap<>();
+            for (Map.Entry<Integer, Set<Record>> entry: another.argumentIndices[i].entrySet()) {
+                this.argumentIndices[i].put(entry.getKey(), new HashSet<>(entry.getValue()));
+            }
+        }
     }
 
     /**
@@ -371,5 +395,14 @@ public class KbRelation implements Iterable<Record> {
 
     public Map<Integer, Set<Record>>[] getArgumentIndices() {
         return argumentIndices;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        KbRelation records1 = (KbRelation) o;
+        return numeration == records1.numeration && arity == records1.arity && Objects.equals(name, records1.name) &&
+                Objects.equals(records, records1.records);
     }
 }

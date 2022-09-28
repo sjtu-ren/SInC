@@ -32,7 +32,7 @@ public class NumeratedKb {
     /** The numeration map */
     protected NumerationMap numMap;
     /** The set of all constants in the KB */
-    protected MultiSet<Integer> constants = new MultiSet<>();
+    protected MultiSet<Integer> constants;
 
     /**
      * Get the path for the files where the KB is dumped.
@@ -53,6 +53,7 @@ public class NumeratedKb {
     public NumeratedKb(String name) {
         this.name = name;
         this.numMap = new NumerationMap();
+        this.constants = new MultiSet<>();
     }
 
     /**
@@ -69,6 +70,7 @@ public class NumeratedKb {
         File kb_dir = getKbPath(name, basePath).toFile();
         String kb_dir_path = kb_dir.getAbsolutePath();
         this.numMap = new NumerationMap(kb_dir_path);
+        this.constants = new MultiSet<>();
         loadAllRelationsHandler(kb_dir, false);
     }
 
@@ -87,7 +89,22 @@ public class NumeratedKb {
         File kb_dir = getKbPath(name, basePath).toFile();
         String kb_dir_path = kb_dir.getAbsolutePath();
         this.numMap = new NumerationMap(kb_dir_path);
+        this.constants = new MultiSet<>();
         loadAllRelationsHandler(kb_dir, check);
+    }
+
+    /**
+     * Copy from another KB and assign a new name.
+     *
+     * @param name The new name for this KB
+     */
+    public NumeratedKb(NumeratedKb another, String name) {
+        this.name = name;
+        for (Map.Entry<Integer, KbRelation> entry: another.relationMap.entrySet()) {
+            relationMap.put(entry.getKey(), new KbRelation(entry.getValue()));
+        }
+        numMap = new NumerationMap(another.numMap);
+        constants = new MultiSet<>(another.constants);
     }
 
     /**
@@ -906,5 +923,14 @@ public class NumeratedKb {
      */
     public Set<Integer> getAllConstants() {
         return constants.distinctValues();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        NumeratedKb that = (NumeratedKb) o;
+        return Objects.equals(name, that.name) && Objects.equals(relationMap, that.relationMap) &&
+                Objects.equals(numMap, that.numMap);
     }
 }
