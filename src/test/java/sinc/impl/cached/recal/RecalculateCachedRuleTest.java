@@ -948,7 +948,7 @@ class RecalculateCachedRuleTest {
         assertEquals(1, rule1.length());
         rule1.updateInKb();
 
-        /* #1: father(?, ?):- */
+        /* #2: father(?, ?):- */
         final RecalculateCachedRule rule2 = new RecalculateCachedRule(FUNCTOR_FATHER, new HashSet<>(), kb);
         assertTrue(rule2.toString().contains("father(?,?):-"));
         assertTrue(rule2.toCompleteRuleString().contains("father(X0,X1):-"));
@@ -1548,7 +1548,7 @@ class RecalculateCachedRuleTest {
 
     @Test
     void testAnyRule4() {
-        /* h(X, X) :- */
+        /* h(X, X, ?) :- */
         final Predicate h1 = new Predicate("h", 3);
         h1.args[0] = new Constant(Rule.CONSTANT_ARG_ID, "a");
         h1.args[1] = new Constant(Rule.CONSTANT_ARG_ID, "a");
