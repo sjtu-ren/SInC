@@ -93,7 +93,7 @@ class SincBasicTest {
                 rule_set_sinc.add(r.getFingerprint());
             }
 
-//            assertTrue(sinc.recover()); TODO: Uncomment here
+            assertTrue(sinc.recover());
             assertEquals(expected_rules, rule_set_sinc);
             deleteDir(Paths.get(TMP_DIR, compressed_kb_name).toFile());
         }
@@ -204,7 +204,7 @@ class SincBasicTest {
                 rule_set_sinc.add(r.getFingerprint());
             }
 
-//            assertTrue(sinc.recover()); TODO: Uncomment here
+            assertTrue(sinc.recover());
             assertEquals(expected_rules, rule_set_sinc);
             deleteDir(Paths.get(TMP_DIR, compressed_kb_name).toFile());
         }
@@ -218,6 +218,6 @@ class SincBasicTest {
                 deleteDir(f);
             }
         }
-        file.delete();
+        assertTrue(file.delete());
     }
 }

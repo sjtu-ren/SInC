@@ -52,6 +52,8 @@ public class NumerationMap {
      * Create an empty numeration map.
      */
     public NumerationMap() {
+        this.numMap = new HashMap<>();
+        freeNums = new PriorityQueue<>();
         loadHandler(null);
     }
 
