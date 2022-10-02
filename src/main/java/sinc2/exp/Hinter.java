@@ -1,6 +1,5 @@
 package sinc2.exp;
 
-import sinc2.impl.base.CachedRule;
 import sinc2.kb.KbException;
 import sinc2.kb.KbRelation;
 import sinc2.kb.NumeratedKb;
@@ -14,7 +13,7 @@ import java.nio.file.Paths;
 import java.util.*;
 
 /**
- * This class reads a hint template and find evaluation of instantiated rules.
+ * This class reads a hint template and a KB to find evaluation of instantiated rules.
  *
  * The structure of the template file contains n+2 lines:
  *   - The first two lines are the settings of the thresholds of "Fact Coverage" and "τ". The output rules must satisfy
@@ -110,6 +109,10 @@ public class Hinter {
         return Paths.get(new File(hintFilePath).toPath().getParent().toString(), String.format("rules_%s.tsv", kbName));
     }
 
+    public static Path getLogFilePath(String hintFilePath, String kbName) {
+        return Paths.get(new File(hintFilePath).toPath().getParent().toString(), String.format("rules_%s.log", kbName));
+    }
+
     /**
      * Create a Hinter object.
      *
@@ -117,11 +120,12 @@ public class Hinter {
      * @param kbName         The name of the KB
      * @param hintFilePath   The path to the hint file
      */
-    public Hinter(String kbPath, String kbName, String hintFilePath) {
+    public Hinter(String kbPath, String kbName, String hintFilePath) throws FileNotFoundException {
         this.kbPath = kbPath;
         this.kbName = kbName;
         this.hintFilePath = hintFilePath;
         this.outputFilePath = getRulesFilePath(hintFilePath, kbName);
+        System.setOut(new PrintStream(getLogFilePath(hintFilePath, kbName).toFile()));
     }
 
     /**
@@ -131,6 +135,7 @@ public class Hinter {
     public void run() throws ExperimentException {
         try {
             /* Load KB */
+            long time_start = System.currentTimeMillis();
             kb = new NumeratedKb(kbName, kbPath);
             kbRelationNums = new int[kb.totalRelations()];
             kbRelationArities = new int[kb.totalRelations()];
@@ -164,10 +169,14 @@ public class Hinter {
             }
 
             /* Instantiate templates */
+            int total_covered_records = 0;
             for (int i = 0; i < kbRelationNums.length; i++) {
                 /* Create the initial rule */
                 int head_functor = kbRelationNums[i];
                 int head_arity = kbRelationArities[i];
+
+                /* Create a relation for all positive entailments */
+                KbRelation pos_entails = new KbRelation("entailments", head_functor, head_arity);
 
                 /* Try each template */
                 Map<MultiSet<Integer>, Set<Fingerprint>> tabu_set = new HashMap<>();
@@ -176,7 +185,7 @@ public class Hinter {
                         continue;
                     }
                     Set<Fingerprint> fingerprint_cache = new HashSet<>();
-                    CachedRule rule = new CachedRule(head_functor, head_arity, fingerprint_cache, tabu_set, kb);
+                    EntailmentExtractiveRule rule = new EntailmentExtractiveRule(head_functor, head_arity, fingerprint_cache, tabu_set, kb);
                     int totalFunctors = hint.functorRestrictionCounterLink.length;
                     int[] template_functor_instantiation = ArrayOperation.initArrayWithValue(totalFunctors, UNDETERMINED);
                     int[] restriction_counters = new int[hint.restrictions.size()];
@@ -187,10 +196,20 @@ public class Hinter {
                     /* Set restrictions */
                     specializeByOperations(
                             rule.clone(), hint.operations, 0, template_functor_instantiation, hint.functorArities,
-                            hint.functorRestrictionCounterLink, hint.restrictionCounterBounds, restriction_counters
+                            hint.functorRestrictionCounterLink, hint.restrictionCounterBounds, restriction_counters, pos_entails
                     );
                 }
+
+                System.out.printf("Relation Done (%d/%d): %s\n", i+1, kbRelationNums.length, kb.num2Name(head_functor));
+                int covered_records = pos_entails.totalRecords();
+                int total_records = kb.getRelation(head_functor).totalRecords();
+                total_covered_records += covered_records;
+                System.out.printf("Coverage: %.2f%% (%d/%d)\n", covered_records * 100.0 / total_records, covered_records, total_records);
             }
+            int total_records = kb.totalRecords();
+            long time_done = System.currentTimeMillis();
+            System.out.printf("Total Coverage: %.2f%% (%d/%d)\n", total_covered_records * 100.0 / total_records, total_covered_records, total_records);
+            System.out.printf("Total Time: %d (ms)\n", time_done - time_start);
 
             /* Dump the results */
             PrintWriter writer = new PrintWriter(outputFilePath.toFile());
@@ -220,10 +239,11 @@ public class Hinter {
      * @param restrictionCounters            The restriction counters
      */
     protected void specializeByOperations(
-            CachedRule rule, List<SpecOpr> operations, int oprStartIdx,
+            EntailmentExtractiveRule rule, List<SpecOpr> operations, int oprStartIdx,
             int[] templateFunctorInstantiation, int[] templateFunctorArities,
-            int[][] functorRestrictionCounterLinks, int[] restrictionCounterBounds, int[] restrictionCounters
-    ) {
+            int[][] functorRestrictionCounterLinks, int[] restrictionCounterBounds, int[] restrictionCounters,
+            KbRelation positiveEntailments
+    ) throws KbException {
         for (int opr_idx = oprStartIdx; opr_idx < operations.size(); opr_idx++) {
             SpecOpr opr = operations.get(opr_idx);
             rule.updateCacheIndices();
@@ -256,7 +276,7 @@ public class Hinter {
                             if (valid) {
                                 /* DFS to the next step */
                                 templateFunctorInstantiation[opr_case2.functor] = kbRelationNums[i];
-                                CachedRule specialized_rule = rule.clone();
+                                EntailmentExtractiveRule specialized_rule = rule.clone();
                                 if (UpdateStatus.NORMAL == specialized_rule.cvt1Uv2ExtLv(   // Can't use the method "specialize" of "SpecOpr",
                                         templateFunctorInstantiation[opr_case2.functor],    // because the functor in the objects denotes the
                                         templateFunctorArities[opr_case2.functor],          // template index instead of the real numeration of the functors
@@ -265,7 +285,8 @@ public class Hinter {
                                     specializeByOperations(
                                             specialized_rule, operations, opr_idx + 1,
                                             templateFunctorInstantiation, templateFunctorArities,
-                                            functorRestrictionCounterLinks, restrictionCounterBounds, restrictionCounters
+                                            functorRestrictionCounterLinks, restrictionCounterBounds, restrictionCounters,
+                                            positiveEntailments
                                     );
                                 }
                                 templateFunctorInstantiation[opr_case2.functor] = UNDETERMINED;   // Restore the instantiation
@@ -305,7 +326,7 @@ public class Hinter {
                             if (valid) {
                                 /* DFS to the next step */
                                 templateFunctorInstantiation[opr_case4.functor] = kbRelationNums[i];
-                                CachedRule specialized_rule = rule.clone();
+                                EntailmentExtractiveRule specialized_rule = rule.clone();
                                 if (UpdateStatus.NORMAL == specialized_rule.cvt2Uvs2NewLv(  // Can't use the method "specialize" of "SpecOpr",
                                         templateFunctorInstantiation[opr_case4.functor],    // because the functor in the objects denotes the
                                         templateFunctorArities[opr_case4.functor],          // template index instead of the real numeration of the functors
@@ -314,7 +335,8 @@ public class Hinter {
                                     specializeByOperations(
                                             specialized_rule, operations, opr_idx + 1,
                                             templateFunctorInstantiation, templateFunctorArities,
-                                            functorRestrictionCounterLinks, restrictionCounterBounds, restrictionCounters
+                                            functorRestrictionCounterLinks, restrictionCounterBounds, restrictionCounters,
+                                            positiveEntailments
                                     );
                                 }
                                 templateFunctorInstantiation[opr_case4.functor] = UNDETERMINED;   // Restore the instantiation
@@ -345,6 +367,19 @@ public class Hinter {
                     eval.value(EvalMetric.CompressionRatio), (int) eval.value(EvalMetric.CompressionCapacity)
             );
             collectedRuleInfos.add(new CollectedRuleInfo(rule_info, eval.value(EvalMetric.CompressionRatio)));
+            rule.extractPositiveEntailments(positiveEntailments);
         }
+    }
+
+    /**
+     * Usage: <Path to the KB> <KB name> <Path to the hint file>
+     * Example: datasets/ UMLS template.hint
+     */
+    public static void main(String[] args) throws FileNotFoundException, ExperimentException {
+        if (3 != args.length) {
+            System.out.println("Usage: <Path to the KB> <KB name> <Path to the hint file>");
+        }
+        Hinter hinter = new Hinter(args[0], args[1], args[2]);
+        hinter.run();
     }
 }
