@@ -6,6 +6,7 @@ import sinc2.common.ParsedPred;
 import sinc2.common.Predicate;
 import sinc2.kb.NumerationMap;
 import sinc2.kb.Record;
+import sinc2.util.ArrayOperation;
 import sinc2.util.DisjointSet;
 import sinc2.util.MultiSet;
 
@@ -197,119 +198,88 @@ public abstract class Rule {
     }
 
     /**
-     * Parse the specialization routine that constructs the rule structure.
+     * Parse the specialization routine that constructs the rule structure. If there are n LVs in the structure, the IDs
+     * of the variables should range from 0 to n-1.
      *
      * @param structure Rule structure
      * @return An ordered specialization operation list
      */
     public static List<ParsedSpecOpr> parseConstruction(List<ParsedPred> structure) throws RuleParseException {
-        List<ParsedPred> remaining_structure = new ArrayList<>(structure); // copy
-        List<ParsedPred> constructed_structure = new ArrayList<>(remaining_structure.size());
+        List<ParsedPred> constructed_structure = new ArrayList<>(structure.size());
         List<ParsedSpecOpr> operations = new ArrayList<>();
 
-        /* Add head */
-        constructed_structure.add(remaining_structure.get(0));
+        /* Copy structure */
+        List<ParsedPred> remaining_structure = new ArrayList<>(structure.size());
+        for (ParsedPred predicate: structure) {
+            remaining_structure.add(new ParsedPred(predicate));
+        }
+
+        /* Find the number of LVs in the rule */
+        int total_lvs = -1;
+        for (ParsedPred predicate: structure) {
+            for (ParsedArg argument: predicate.args) {
+                if (null != argument && null == argument.name) {
+                    total_lvs = Math.max(total_lvs, argument.id);
+                }
+            }
+        }
+        total_lvs++;
+
+        /* Add head and mask all GVs in the head */
+        ParsedPred remaining_head = remaining_structure.get(0);
+        constructed_structure.add(remaining_head);
         remaining_structure.remove(0);
-        addConstantSpecialization(operations, constructed_structure.get(0), 0);
-
-        /* Specialize all variables and constants */
-        /* Constants are specialized as early as possible */
-        int constructed_length = -1;
-        int lv_id = -1;
-        while (constructed_length < operations.size()) {
-            constructed_length = operations.size();
-            for (int pred_idx = 0; pred_idx < constructed_structure.size(); pred_idx++) {
-                ParsedPred predicate = constructed_structure.get(pred_idx);
-                for (int arg_idx = 0; arg_idx < predicate.args.length; arg_idx++) {
-                    ParsedArg argument = predicate.args[arg_idx];
-                    if (null != argument) {
-                        /* Specialize the variable */
-                        predicate.args[arg_idx] = null; // remove specialized arguments
-                        int var_id = argument.id;   // As constants are added the moment a predicate is added to the structure, here "argument.name == null" will always be true
-                        boolean found = false;
-                        for (int pred_idx2 = pred_idx; pred_idx2 < constructed_structure.size() && !found; pred_idx2++) {
-                            ParsedPred predicate2 = constructed_structure.get(pred_idx2);
-                            for (int arg_idx2 = 0; arg_idx2 < predicate2.args.length; arg_idx2++) {
-                                ParsedArg argument2 = predicate2.args[arg_idx2];
-                                if (null != argument2 && null == argument2.name && var_id == argument2.id) {
-                                    /* Find another occurrence in the constructed part of the rule */
-                                    /* Case 3 */
-                                    found = true;
-                                    predicate2.args[arg_idx2] = null;
-                                    operations.add(new ParsedSpecOprCase3(pred_idx, arg_idx, pred_idx2, arg_idx2));
-                                    lv_id++;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (!found) {
-                            /* Find another occurrence in the un-constructed part of the rule */
-                            Iterator<ParsedPred> it = remaining_structure.listIterator();
-                            while (it.hasNext() && !found) {
-                                ParsedPred predicate2 = it.next();
-                                for (int arg_idx2 = 0; arg_idx2 < predicate2.args.length; arg_idx2++) {
-                                    ParsedArg argument2 = predicate2.args[arg_idx2];
-                                    if (null != argument2 && null == argument2.name && var_id == argument2.id) {
-                                        /* Case 4 */
-                                        found = true;
-                                        predicate2.args[arg_idx2] = null;
-                                        operations.add(new ParsedSpecOprCase4(
-                                                predicate2.functor, predicate2.args.length, arg_idx2, pred_idx, arg_idx
-                                        ));
-                                        lv_id++;
-                                        constructed_structure.add(predicate2);
-                                        it.remove();
-
-                                        /* Case 5 */
-                                        addConstantSpecialization(operations, predicate2, constructed_structure.size() - 1);
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-
-                        /* Construct the remaining occurrences of the variable */
-                        for (int pred_idx2 = pred_idx; pred_idx2 < constructed_structure.size(); pred_idx2++) {
-                            ParsedPred predicate2 = constructed_structure.get(pred_idx2);
-                            for (int arg_idx2 = 0; arg_idx2 < predicate2.args.length; arg_idx2++) {
-                                ParsedArg argument2 = predicate2.args[arg_idx2];
-                                if (null != argument2 && null == argument2.name && var_id == argument2.id) {
-                                    /* Find another occurrence in the constructed part of the rule */
-                                    /* Case 1 */
-                                    predicate2.args[arg_idx2] = null;
-                                    operations.add(new ParsedSpecOprCase1(pred_idx2, arg_idx2, lv_id));
-                                    break;
-                                }
-                            }
-                        }
-                        Iterator<ParsedPred> it = remaining_structure.listIterator();
-                        while (it.hasNext()) {
-                            ParsedPred predicate2 = it.next();
-                            for (int arg_idx2 = 0; arg_idx2 < predicate2.args.length; arg_idx2++) {
-                                ParsedArg argument2 = predicate2.args[arg_idx2];
-                                if (null != argument2 && null == argument2.name && var_id == argument2.id) {
-                                    /* Case 2 */
-                                    predicate2.args[arg_idx2] = null;
-                                    operations.add(new ParsedSpecOprCase2(
-                                            predicate2.functor, predicate2.args.length, arg_idx2, lv_id
-                                    ));
-                                    constructed_structure.add(predicate2);
-                                    it.remove();
-
-                                    /* Case 5 */
-                                    addConstantSpecialization(operations, predicate2, constructed_structure.size() - 1);
-                                    break;
-                                }
-                            }
+        addConstantSpecialization(operations, remaining_head, 0);
+        ParsedArg[] masked_head_args = new ParsedArg[remaining_head.args.length];
+        for (int arg_idx = 0; arg_idx < remaining_head.args.length; arg_idx++) {
+            /* Find a GV in the head */
+            ParsedArg argument = remaining_head.args[arg_idx];
+            if (null != argument) { // argument.name is null
+                /* Check if it is a GV */
+                boolean is_gv = false;
+                for (int pred_idx = FIRST_BODY_PRED_IDX; pred_idx < structure.size() && !is_gv; pred_idx++) {
+                    ParsedPred body_pred = structure.get(pred_idx);
+                    for (ParsedArg body_argument: body_pred.args) {
+                        if (null != body_argument && null == body_argument.name && argument.id == body_argument.id) {
+                            is_gv = true;
+                            break;
                         }
                     }
+                }
+                if (is_gv) {
+                    /* Record a masked argument */
+                    masked_head_args[arg_idx] = argument;
+                    remaining_head.args[arg_idx] = null;
                 }
             }
         }
 
+        /* Specialize all variables and constants */
+        /* Constants are specialized as early as possible */
+        int[] structure_vid_2_operation_vid = ArrayOperation.initArrayWithValue(total_lvs, -1);
+        int constructed_lv_id = constructLinkedStructure(
+                operations, remaining_structure, constructed_structure, -1, structure_vid_2_operation_vid
+        );
+        for (int arg_idx = 0; arg_idx < masked_head_args.length; arg_idx++) {
+            ParsedArg gv_arg = masked_head_args[arg_idx];
+            if (null != gv_arg) {
+                /* Unmask the head GV */
+                for (int arg_idx2 = arg_idx; arg_idx2 < masked_head_args.length; arg_idx2++) {
+                    if (null != masked_head_args[arg_idx2] && gv_arg.id == masked_head_args[arg_idx2].id) {
+                        remaining_head.args[arg_idx2] = masked_head_args[arg_idx2];
+                        masked_head_args[arg_idx2] = null;
+                    }
+                }
+
+                /* Construct linked structure */
+                constructed_lv_id = constructLinkedStructure(
+                        operations, remaining_structure, constructed_structure, constructed_lv_id, structure_vid_2_operation_vid
+                );
+            }
+        }
+
         if (!remaining_structure.isEmpty()) {
-            throw new RuleParseException("Independent fragment existed in the rule: " + remaining_structure);
+            throw new RuleParseException("Independent fragment existing in the rule: " + remaining_structure);
         }
 
         return operations;
@@ -331,6 +301,122 @@ public abstract class Rule {
                 predicate.args[arg_idx] = null;
             }
         }
+    }
+
+    static protected int constructLinkedStructure(
+            List<ParsedSpecOpr> operations, List<ParsedPred> remainingStructure, List<ParsedPred> constructedStructure,
+            int constructedLvId, int[] structureVid2OperationVid
+    ) {
+        for (int pred_idx = HEAD_PRED_IDX; pred_idx < constructedStructure.size(); pred_idx++) {
+            ParsedPred predicate = constructedStructure.get(pred_idx);
+            for (int arg_idx = 0; arg_idx < predicate.args.length; arg_idx++) {
+                ParsedArg argument = predicate.args[arg_idx];
+                if (null != argument) { // argument.id is null
+                    /* Specialize the variable */
+                    predicate.args[arg_idx] = null; // remove specialized arguments
+                    int var_id = argument.id;   // As constants are added the moment a predicate is added to the structure, here "argument.name == null" will always be true
+
+                    if (-1 != structureVid2OperationVid[var_id]) {
+                        /* Case 1 in head (GV) */
+                        operations.add(new ParsedSpecOprCase1(pred_idx, arg_idx, structureVid2OperationVid[var_id]));
+                        continue;
+                    }
+
+                    boolean found = false;
+                    for (int pred_idx2 = pred_idx; pred_idx2 < constructedStructure.size() && !found; pred_idx2++) {
+                        ParsedPred predicate2 = constructedStructure.get(pred_idx2);
+                        for (int arg_idx2 = 0; arg_idx2 < predicate2.args.length; arg_idx2++) {
+                            ParsedArg argument2 = predicate2.args[arg_idx2];
+                            if (null != argument2 && var_id == argument2.id) {
+                                /* Find another occurrence in the constructed part of the rule */
+                                /* Case 3 */
+                                found = true;
+                                predicate2.args[arg_idx2] = null;
+                                operations.add(new ParsedSpecOprCase3(pred_idx, arg_idx, pred_idx2, arg_idx2));
+                                constructedLvId++;
+                                structureVid2OperationVid[var_id] = constructedLvId;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!found) {
+                        /* Find another occurrence in the un-constructed part of the rule */
+                        Iterator<ParsedPred> it = remainingStructure.listIterator();
+                        while (it.hasNext() && !found) {
+                            ParsedPred predicate2 = it.next();
+                            for (int arg_idx2 = 0; arg_idx2 < predicate2.args.length; arg_idx2++) {
+                                ParsedArg argument2 = predicate2.args[arg_idx2];
+                                if (null != argument2 && null == argument2.name && var_id == argument2.id) {
+                                    /* Case 4 */
+                                    found = true;
+                                    predicate2.args[arg_idx2] = null;
+                                    operations.add(new ParsedSpecOprCase4(
+                                            predicate2.functor, predicate2.args.length, arg_idx2, pred_idx, arg_idx
+                                    ));
+                                    constructedLvId++;
+                                    structureVid2OperationVid[var_id] = constructedLvId;
+                                    constructedStructure.add(predicate2);
+                                    it.remove();
+
+                                    /* Case 5 */
+                                    addConstantSpecialization(operations, predicate2, constructedStructure.size() - 1);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if (found) {
+                        /* Construct the remaining occurrences of the variable */
+                        for (int pred_idx2 = pred_idx; pred_idx2 < constructedStructure.size(); pred_idx2++) {
+                            ParsedPred predicate2 = constructedStructure.get(pred_idx2);
+                            for (int arg_idx2 = 0; arg_idx2 < predicate2.args.length; arg_idx2++) {
+                                ParsedArg argument2 = predicate2.args[arg_idx2];
+                                if (null != argument2 && null == argument2.name && var_id == argument2.id) {
+                                    /* Find another occurrence in the constructed part of the rule */
+                                    /* Case 1 */
+                                    predicate2.args[arg_idx2] = null;
+                                    operations.add(new ParsedSpecOprCase1(pred_idx2, arg_idx2, constructedLvId));
+                                    break;
+                                }
+                            }
+                        }
+                        Iterator<ParsedPred> it = remainingStructure.listIterator();
+                        while (it.hasNext()) {
+                            ParsedPred predicate2 = it.next();
+                            for (int arg_idx2 = 0; arg_idx2 < predicate2.args.length; arg_idx2++) {
+                                ParsedArg argument2 = predicate2.args[arg_idx2];
+                                if (null != argument2 && null == argument2.name && var_id == argument2.id) {
+                                    /* Case 2 */
+                                    predicate2.args[arg_idx2] = null;
+                                    operations.add(new ParsedSpecOprCase2(
+                                            predicate2.functor, predicate2.args.length, arg_idx2, constructedLvId
+                                    ));
+                                    constructedStructure.add(predicate2);
+                                    it.remove();
+
+                                    /* Case 5 */
+                                    addConstantSpecialization(operations, predicate2, constructedStructure.size() - 1);
+                                    break;
+                                }
+                            }
+                        }
+                    } else {
+                        /* It is an unmatched GV */
+                        int gv_id = structureVid2OperationVid[var_id];
+                        if (-1 != gv_id) {
+                            /* It is a GV in the head */
+                            operations.add(new ParsedSpecOprCase1(pred_idx, arg_idx, gv_id));
+                        } else {
+                            /* Otherwise, it is a GV in the body, recover the argument */
+                            predicate.args[arg_idx] = argument;
+                        }
+                    }
+                }
+            }
+        }
+        return constructedLvId;
     }
 
     /**

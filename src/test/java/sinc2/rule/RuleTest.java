@@ -395,6 +395,18 @@ class RuleTest {
         checkSpecOprEquivalence(Rule.parseStructure("head(X, Y, ?) :- p(Y, W, R), q(?, X, Z), q(Z, R), r(W)"));
     }
 
+    @Test
+    void testParseSpecOprs6() throws RuleParseException, KbException  {
+        /* head(?, X, X, Y, Y, Z) :- p(Y, Z), q(?, Z, ?) */
+        checkSpecOprEquivalence(Rule.parseStructure("head(?, X, X, Y, Y, Z) :- p(Y, Z), q(?, Z, ?)"));
+    }
+
+    @Test
+    void testParseSpecOprs7() throws RuleParseException, KbException  {
+        /* head(?, X, X, Y, Y, Z, Z, W, S) :- p(Y, Z), q(?, Z, ?), r(W, K, K), r(S, T, T) */
+        checkSpecOprEquivalence(Rule.parseStructure("head(?, X, X, Y, Y, Z, Z, W, S) :- p(Y, Z), q(?, Z, ?), r(W, K, K), r(S, T, T)"));
+    }
+
     void checkSpecOprEquivalence(List<ParsedPred> structure) throws RuleParseException, KbException {
         /* Map constant and predicate symbols */
         NumeratedKb kb = new NumeratedKb("test");

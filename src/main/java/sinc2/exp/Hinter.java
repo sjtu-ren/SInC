@@ -1,5 +1,6 @@
 package sinc2.exp;
 
+import sinc2.common.Predicate;
 import sinc2.kb.KbException;
 import sinc2.kb.KbRelation;
 import sinc2.kb.NumeratedKb;
@@ -106,11 +107,17 @@ public class Hinter {
     protected List<CollectedRuleInfo> collectedRuleInfos = new ArrayList<>();
 
     public static Path getRulesFilePath(String hintFilePath, String kbName) {
-        return Paths.get(new File(hintFilePath).toPath().getParent().toString(), String.format("rules_%s.tsv", kbName));
+        return Paths.get(
+                new File(hintFilePath).toPath().toAbsolutePath().getParent().toString(),
+                String.format("rules_%s.tsv", kbName)
+        );
     }
 
     public static Path getLogFilePath(String hintFilePath, String kbName) {
-        return Paths.get(new File(hintFilePath).toPath().getParent().toString(), String.format("rules_%s.log", kbName));
+        return Paths.get(
+                new File(hintFilePath).toPath().toAbsolutePath().getParent().toString(),
+                String.format("rules_%s.log", kbName)
+        );
     }
 
     /**
@@ -205,6 +212,7 @@ public class Hinter {
                 int total_records = kb.getRelation(head_functor).totalRecords();
                 total_covered_records += covered_records;
                 System.out.printf("Coverage: %.2f%% (%d/%d)\n", covered_records * 100.0 / total_records, covered_records, total_records);
+                System.out.flush();
             }
             int total_records = kb.totalRecords();
             long time_done = System.currentTimeMillis();
@@ -298,11 +306,13 @@ public class Hinter {
 
                         /* If it goes here, all following operations are done in the recursive call above, just return */
                         return;
-                    } else if (UpdateStatus.NORMAL == rule.cvt1Uv2ExtLv(
-                            templateFunctorInstantiation[opr_case2.functor], templateFunctorArities[opr_case2.functor],
-                            opr_case2.argIdx, opr_case2.varId
-                    )) {
-                        return;
+                    } else {
+                        if (UpdateStatus.NORMAL == rule.cvt1Uv2ExtLv(
+                                templateFunctorInstantiation[opr_case2.functor], templateFunctorArities[opr_case2.functor],
+                                opr_case2.argIdx, opr_case2.varId
+                        )) {
+                            return;
+                        }
                     }
                     break;
                 case CASE4:
@@ -348,11 +358,13 @@ public class Hinter {
 
                         /* If it goes here, all following operations are done in the recursive call above, just return */
                         return;
-                    } else if (UpdateStatus.NORMAL == rule.cvt2Uvs2NewLv(
-                            templateFunctorInstantiation[opr_case4.functor], templateFunctorArities[opr_case4.functor],
-                            opr_case4.argIdx1, opr_case4.predIdx2, opr_case4.argIdx2
-                    )) {
-                        return;
+                    } else {
+                        if (UpdateStatus.NORMAL == rule.cvt2Uvs2NewLv(
+                                templateFunctorInstantiation[opr_case4.functor], templateFunctorArities[opr_case4.functor],
+                                opr_case4.argIdx1, opr_case4.predIdx2, opr_case4.argIdx2
+                        )) {
+                            return;
+                        }
                     }
                     break;
             }
@@ -369,6 +381,19 @@ public class Hinter {
             collectedRuleInfos.add(new CollectedRuleInfo(rule_info, eval.value(EvalMetric.CompressionRatio)));
             rule.extractPositiveEntailments(positiveEntailments);
         }
+    }
+
+    protected String rule2String(List<Predicate> structure) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(structure.get(0).toString()).append(":-");
+        if (1 < structure.size()) {
+            builder.append(structure.get(1).toString());
+            for (int i = 2; i < structure.size(); i++) {
+                builder.append(',');
+                builder.append(structure.get(i).toString());
+            }
+        }
+        return builder.toString();
     }
 
     /**
