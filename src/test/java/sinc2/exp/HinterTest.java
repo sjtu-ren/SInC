@@ -87,7 +87,7 @@ class HinterTest {
         hint_writer.close();
 
         /* Run hinter */
-        Hinter hinter = new Hinter(MEM_DIR, KB_NAME, hint_file.getAbsolutePath());
+        Hinter hinter = new Hinter(MEM_DIR, KB_NAME, hint_file.getAbsolutePath(), 1);
         hinter.run();
 
         /* Check result */
@@ -98,6 +98,7 @@ class HinterTest {
         expected_rules.add(parseBareRule("parent(X,Y):-mother(X,Y)", kb.getNumerationMap(), cache, tabu));
         expected_rules.add(parseBareRule("family(X,Y,Z):-father(X,Z),mother(Y,Z)", kb.getNumerationMap(), cache, tabu));
         File rules_file = Hinter.getRulesFilePath(hint_file.getAbsolutePath(), KB_NAME).toFile();
+        File log_file = Hinter.getLogFilePath(hint_file.getAbsolutePath(), KB_NAME).toFile();
         BufferedReader reader = new BufferedReader(new FileReader(rules_file));
         String line = reader.readLine();    // read the title line
         Set<Rule> actual_rules = new HashSet<>();
@@ -108,8 +109,9 @@ class HinterTest {
 
         /* Remove test files */
         deleteDir(Paths.get(MEM_DIR, KB_NAME).toFile());
-        hint_file.delete();
-        rules_file.delete();
+        assertTrue(hint_file.delete());
+        assertTrue(rules_file.delete());
+        assertTrue(log_file.delete());
     }
     
     @Test
@@ -245,7 +247,7 @@ class HinterTest {
         hint_writer.close();
 
         /* Run hinter */
-        Hinter hinter = new Hinter(MEM_DIR, KB_NAME, hint_file.getAbsolutePath());
+        Hinter hinter = new Hinter(MEM_DIR, KB_NAME, hint_file.getAbsolutePath(), 1);
         hinter.run();
 
         /* Check result */
@@ -278,6 +280,7 @@ class HinterTest {
         expected_rules.add(parseBareRule("grandmother(X,Y):-mother(X,Z),parent(Z,Y)", kb.getNumerationMap(), cache, tabu));
         expected_rules.add(parseBareRule("grandchild(X,Y):-child(X,Z),child(Z,Y)", kb.getNumerationMap(), cache, tabu));
         File rules_file = Hinter.getRulesFilePath(hint_file.getAbsolutePath(), KB_NAME).toFile();
+        File log_file = Hinter.getLogFilePath(hint_file.getAbsolutePath(), KB_NAME).toFile();
         BufferedReader reader = new BufferedReader(new FileReader(rules_file));
         String line = reader.readLine();    // read the title line
         Set<Rule> actual_rules = new HashSet<>();
@@ -288,8 +291,9 @@ class HinterTest {
 
         /* Remove test files */
         deleteDir(Paths.get(MEM_DIR, KB_NAME).toFile());
-        hint_file.delete();
-        rules_file.delete();
+        assertTrue(hint_file.delete());
+        assertTrue(rules_file.delete());
+        assertTrue(log_file.delete());
     }
 
     @Test
@@ -359,8 +363,8 @@ class HinterTest {
         /* Create hint file */
         File hint_file = Paths.get(MEM_DIR, HINT_FILE_NAME).toFile();
         PrintWriter hint_writer = new PrintWriter(hint_file);
-        hint_writer.println(0.0);
-        hint_writer.println(0.0);
+        hint_writer.println(0.2);
+        hint_writer.println(0.6);
         //hint_writer.println("p(X,Y):-q(X,Y);[(p,q)]");
         hint_writer.println("p(X,Y,Z):-q(X,Z),r(Y,Z);[(p,r),(q,r)]");
         hint_writer.println("p(X,Y):-q(X,Z),r(Y,Z);[]");
@@ -369,7 +373,7 @@ class HinterTest {
         hint_writer.close();
 
         /* Run hinter */
-        Hinter hinter = new Hinter(MEM_DIR, KB_NAME, hint_file.getAbsolutePath());
+        Hinter hinter = new Hinter(MEM_DIR, KB_NAME, hint_file.getAbsolutePath(), 1);
         hinter.run();
 
         /* Check result */
@@ -386,6 +390,7 @@ class HinterTest {
         //expected_rules.add(parseBareRule("child(X,Y):-mother(Z,X),couple(Y,Z)", kb.getNumerationMap(), cache, tabu));
         //expected_rules.add(parseBareRule("father(X,Y):-couple(X,Z),mother(Z,Y)", kb.getNumerationMap(), cache, tabu));
         File rules_file = Hinter.getRulesFilePath(hint_file.getAbsolutePath(), KB_NAME).toFile();
+        File log_file = Hinter.getLogFilePath(hint_file.getAbsolutePath(), KB_NAME).toFile();
         BufferedReader reader = new BufferedReader(new FileReader(rules_file));
         String line = reader.readLine();    // read the title line
         Set<Rule> actual_rules = new HashSet<>();
@@ -396,8 +401,9 @@ class HinterTest {
 
         /* Remove test files */
         deleteDir(Paths.get(MEM_DIR, KB_NAME).toFile());
-        hint_file.delete();
-        rules_file.delete();
+        assertTrue(hint_file.delete());
+        assertTrue(rules_file.delete());
+        assertTrue(log_file.delete());
     }
     
     BareRule parseBareRule(String str, NumerationMap numMap, Set<Fingerprint> cache, Map<MultiSet<Integer>, Set<Fingerprint>> tabu) throws RuleParseException {

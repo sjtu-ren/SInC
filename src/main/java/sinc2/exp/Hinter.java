@@ -12,6 +12,9 @@ import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class reads a hint template and a KB to find evaluation of instantiated rules.
@@ -69,8 +72,6 @@ import java.util.*;
  *   friend(X,Y):-friend(Y,X)	2	10	2	0.5	0.71	6
  *   grandparent(X,Y):-parent(X,Z),parent(Z,Y)	3	150	0	0.9375	0.98	147
  *
- * Todo: Add some statistics of the result
- *
  * @since 2.0
  */
 public class Hinter {
@@ -105,6 +106,8 @@ public class Hinter {
     protected double factCoverageThreshold, compRatioThreshold;
     /** The list of collected rules and the evaluation details */
     protected List<CollectedRuleInfo> collectedRuleInfos = new ArrayList<>();
+    /** Threads */
+    protected ForkJoinPool threadPool;
 
     public static Path getRulesFilePath(String hintFilePath, String kbName) {
         return Paths.get(
@@ -126,12 +129,14 @@ public class Hinter {
      * @param kbPath         The path to the numerated KB
      * @param kbName         The name of the KB
      * @param hintFilePath   The path to the hint file
+     * @param threads        The number of threads that runs the hinter
      */
-    public Hinter(String kbPath, String kbName, String hintFilePath) throws FileNotFoundException {
+    public Hinter(String kbPath, String kbName, String hintFilePath, int threads) throws FileNotFoundException {
         this.kbPath = kbPath;
         this.kbName = kbName;
         this.hintFilePath = hintFilePath;
         this.outputFilePath = getRulesFilePath(hintFilePath, kbName);
+        this.threadPool = new ForkJoinPool(threads, ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, true);
         System.setOut(new PrintStream(getLogFilePath(hintFilePath, kbName).toFile()));
     }
 
@@ -186,27 +191,30 @@ public class Hinter {
                 KbRelation pos_entails = new KbRelation("entailments", head_functor, head_arity);
 
                 /* Try each template */
-                Map<MultiSet<Integer>, Set<Fingerprint>> tabu_set = new HashMap<>();
+                Map<MultiSet<Integer>, Set<Fingerprint>> tabu_set = new ConcurrentHashMap<>();
                 for (Hint hint: hints) {
                     if (head_arity != hint.functorArities[0]) {
                         continue;
                     }
-                    Set<Fingerprint> fingerprint_cache = new HashSet<>();
+                    Set<Fingerprint> fingerprint_cache = Collections.synchronizedSet(new HashSet<>());
                     EntailmentExtractiveRule rule = new EntailmentExtractiveRule(head_functor, head_arity, fingerprint_cache, tabu_set, kb);
                     int totalFunctors = hint.functorRestrictionCounterLink.length;
                     int[] template_functor_instantiation = ArrayOperation.initArrayWithValue(totalFunctors, UNDETERMINED);
-                    int[] restriction_counters = new int[hint.restrictions.size()];
+                    int[] restriction_counters = ArrayOperation.initArrayWithValue(hint.restrictions.size(), 1);
+                    int[] restriction_targets = ArrayOperation.initArrayWithValue(hint.restrictions.size(), -1);
 
                     /* Set head functor */
                     template_functor_instantiation[0] = head_functor;
 
                     /* Set restrictions */
-                    specializeByOperations(
-                            rule.clone(), hint.operations, 0, template_functor_instantiation, hint.functorArities,
-                            hint.functorRestrictionCounterLink, hint.restrictionCounterBounds, restriction_counters, pos_entails
-                    );
+                    threadPool.submit(() -> specializeByOperations(
+                            rule, hint.operations, 0, template_functor_instantiation, hint.functorArities,
+                            hint.functorRestrictionCounterLink, hint.restrictionCounterBounds, restriction_counters, restriction_targets,
+                            pos_entails
+                    ));
                 }
 
+                while (!threadPool.awaitQuiescence(1, TimeUnit.SECONDS));   // wait for all DFS tasks to finish
                 System.out.printf("Relation Done (%d/%d): %s\n", i+1, kbRelationNums.length, kb.num2Name(head_functor));
                 int covered_records = pos_entails.totalRecords();
                 int total_records = kb.getRelation(head_functor).totalRecords();
@@ -245,13 +253,15 @@ public class Hinter {
      * @param functorRestrictionCounterLinks Template functor to restriction counter index
      * @param restrictionCounterBounds       The bounds for the restriction counters
      * @param restrictionCounters            The restriction counters
+     * @param restrictionTargets             The comparing target functors that determines the validation of restrictions
+     * @param positiveEntailments            The relation object that holds all the entailed records in one relation
      */
     protected void specializeByOperations(
             EntailmentExtractiveRule rule, List<SpecOpr> operations, int oprStartIdx,
             int[] templateFunctorInstantiation, int[] templateFunctorArities,
             int[][] functorRestrictionCounterLinks, int[] restrictionCounterBounds, int[] restrictionCounters,
-            KbRelation positiveEntailments
-    ) throws KbException {
+            int[] restrictionTargets, KbRelation positiveEntailments
+    ) {
         for (int opr_idx = oprStartIdx; opr_idx < operations.size(); opr_idx++) {
             SpecOpr opr = operations.get(opr_idx);
             rule.updateCacheIndices();
@@ -271,43 +281,51 @@ public class Hinter {
                             if (templateFunctorArities[opr_case2.functor] != kbRelationArities[i]) {  // Check whether arity matches
                                 continue;
                             }
-                            for (int counter_idx: functorRestrictionCounterLinks[opr_case2.functor]) {  // Add counters
-                                restrictionCounters[counter_idx]++;
-                            }
+                            final int new_functor = kbRelationNums[i];
                             boolean valid = true;
-                            for (int counter_idx: functorRestrictionCounterLinks[opr_case2.functor]) {  // Check whether any counter is violated
-                                if (restrictionCounterBounds[counter_idx] == restrictionCounters[counter_idx]) {
+                            int[] new_restriction_counters = restrictionCounters.clone();
+                            int[] new_restriction_targets = restrictionTargets.clone();
+                            for (int counter_idx: functorRestrictionCounterLinks[opr_case2.functor]) {  // Add counters
+                                if (new_restriction_targets[counter_idx] == new_functor) {
+                                    new_restriction_counters[counter_idx]++;
+                                } else {
+                                    new_restriction_targets[counter_idx] = new_functor;
+                                }
+                                if (restrictionCounterBounds[counter_idx] == new_restriction_counters[counter_idx]) {
                                     valid = false;
                                     break;
                                 }
                             }
                             if (valid) {
-                                /* DFS to the next step */
-                                templateFunctorInstantiation[opr_case2.functor] = kbRelationNums[i];
-                                EntailmentExtractiveRule specialized_rule = rule.clone();
-                                if (UpdateStatus.NORMAL == specialized_rule.cvt1Uv2ExtLv(   // Can't use the method "specialize" of "SpecOpr",
-                                        templateFunctorInstantiation[opr_case2.functor],    // because the functor in the objects denotes the
-                                        templateFunctorArities[opr_case2.functor],          // template index instead of the real numeration of the functors
-                                        opr_case2.argIdx, opr_case2.varId)
-                                ) {
-                                    specializeByOperations(
-                                            specialized_rule, operations, opr_idx + 1,
-                                            templateFunctorInstantiation, templateFunctorArities,
-                                            functorRestrictionCounterLinks, restrictionCounterBounds, restrictionCounters,
-                                            positiveEntailments
-                                    );
-                                }
-                                templateFunctorInstantiation[opr_case2.functor] = UNDETERMINED;   // Restore the instantiation
-                            }
-                            for (int counter_idx: functorRestrictionCounterLinks[opr_case2.functor]) {  // Restore the counters
-                                restrictionCounterBounds[counter_idx]--;
+                                /* Run the branch in a new thread */
+                                final int new_opr_idx = opr_idx + 1;
+                                threadPool.submit(() -> {
+                                    /* Copy arguments */
+                                    EntailmentExtractiveRule specialized_rule = rule.clone();
+                                    int[] new_template_functor_instantiation = templateFunctorInstantiation.clone();
+                                    new_template_functor_instantiation[opr_case2.functor] = new_functor;
+
+                                    /* DFS to the next step */
+                                    if (UpdateStatus.NORMAL == specialized_rule.cvt1Uv2ExtLv(   // Can't use the method "specialize" of "SpecOpr",
+                                            new_functor,                                        // because the functor in the objects denotes the
+                                            templateFunctorArities[opr_case2.functor],          // template index instead of the real numeration of the functors
+                                            opr_case2.argIdx, opr_case2.varId
+                                    )) {
+                                        specializeByOperations(
+                                                specialized_rule, operations, new_opr_idx,
+                                                new_template_functor_instantiation, templateFunctorArities,
+                                                functorRestrictionCounterLinks, restrictionCounterBounds,
+                                                new_restriction_counters, new_restriction_targets, positiveEntailments
+                                        );
+                                    }
+                                });
                             }
                         }
 
                         /* If it goes here, all following operations are done in the recursive call above, just return */
                         return;
                     } else {
-                        if (UpdateStatus.NORMAL == rule.cvt1Uv2ExtLv(
+                        if (UpdateStatus.NORMAL != rule.cvt1Uv2ExtLv(
                                 templateFunctorInstantiation[opr_case2.functor], templateFunctorArities[opr_case2.functor],
                                 opr_case2.argIdx, opr_case2.varId
                         )) {
@@ -323,43 +341,51 @@ public class Hinter {
                             if (templateFunctorArities[opr_case4.functor] != kbRelationArities[i]) {  // Check whether arity matches
                                 continue;
                             }
-                            for (int counter_idx: functorRestrictionCounterLinks[opr_case4.functor]) {  // Add counters
-                                restrictionCounters[counter_idx]++;
-                            }
+                            final int new_functor = kbRelationNums[i];
                             boolean valid = true;
-                            for (int counter_idx: functorRestrictionCounterLinks[opr_case4.functor]) {  // Check whether any counter is violated
-                                if (restrictionCounterBounds[counter_idx] == restrictionCounters[counter_idx]) {
+                            int[] new_restriction_counters = restrictionCounters.clone();
+                            int[] new_restriction_targets = restrictionTargets.clone();
+                            for (int counter_idx: functorRestrictionCounterLinks[opr_case4.functor]) {  // Add counters
+                                if (new_restriction_targets[counter_idx] == new_functor) {
+                                    new_restriction_counters[counter_idx]++;
+                                } else {
+                                    new_restriction_targets[counter_idx] = new_functor;
+                                }
+                                if (restrictionCounterBounds[counter_idx] == new_restriction_counters[counter_idx]) {
                                     valid = false;
                                     break;
                                 }
                             }
                             if (valid) {
-                                /* DFS to the next step */
-                                templateFunctorInstantiation[opr_case4.functor] = kbRelationNums[i];
-                                EntailmentExtractiveRule specialized_rule = rule.clone();
-                                if (UpdateStatus.NORMAL == specialized_rule.cvt2Uvs2NewLv(  // Can't use the method "specialize" of "SpecOpr",
-                                        templateFunctorInstantiation[opr_case4.functor],    // because the functor in the objects denotes the
-                                        templateFunctorArities[opr_case4.functor],          // template index instead of the real numeration of the functors
-                                        opr_case4.argIdx1, opr_case4.predIdx2, opr_case4.argIdx2)
-                                ) {
-                                    specializeByOperations(
-                                            specialized_rule, operations, opr_idx + 1,
-                                            templateFunctorInstantiation, templateFunctorArities,
-                                            functorRestrictionCounterLinks, restrictionCounterBounds, restrictionCounters,
-                                            positiveEntailments
-                                    );
-                                }
-                                templateFunctorInstantiation[opr_case4.functor] = UNDETERMINED;   // Restore the instantiation
-                            }
-                            for (int counter_idx: functorRestrictionCounterLinks[opr_case4.functor]) {  // Restore the counters
-                                restrictionCounterBounds[counter_idx]--;
+                                /* Run the branch in a new thread */
+                                final int new_opr_idx = opr_idx + 1;
+                                threadPool.submit(() -> {
+                                    /* Copy arguments */
+                                    EntailmentExtractiveRule specialized_rule = rule.clone();
+                                    int[] new_template_functor_instantiation = templateFunctorInstantiation.clone();
+                                    new_template_functor_instantiation[opr_case4.functor] = new_functor;
+
+                                    /* DFS to the next step */
+                                    if (UpdateStatus.NORMAL == specialized_rule.cvt2Uvs2NewLv(  // Can't use the method "specialize" of "SpecOpr",
+                                            new_functor,                                        // because the functor in the objects denotes the
+                                            templateFunctorArities[opr_case4.functor],          // template index instead of the real numeration of the functors
+                                            opr_case4.argIdx1, opr_case4.predIdx2, opr_case4.argIdx2)
+                                    ) {
+                                        specializeByOperations(
+                                                specialized_rule, operations, new_opr_idx,
+                                                new_template_functor_instantiation, templateFunctorArities,
+                                                functorRestrictionCounterLinks, restrictionCounterBounds,
+                                                new_restriction_counters, new_restriction_targets, positiveEntailments
+                                        );
+                                    }
+                                });
                             }
                         }
 
                         /* If it goes here, all following operations are done in the recursive call above, just return */
                         return;
                     } else {
-                        if (UpdateStatus.NORMAL == rule.cvt2Uvs2NewLv(
+                        if (UpdateStatus.NORMAL != rule.cvt2Uvs2NewLv(
                                 templateFunctorInstantiation[opr_case4.functor], templateFunctorArities[opr_case4.functor],
                                 opr_case4.argIdx1, opr_case4.predIdx2, opr_case4.argIdx2
                         )) {
@@ -378,8 +404,17 @@ public class Hinter {
                     eval.getPosEtls()/kb.getRelation(templateFunctorInstantiation[0]).totalRecords()*100,
                     eval.value(EvalMetric.CompressionRatio), (int) eval.value(EvalMetric.CompressionCapacity)
             );
-            collectedRuleInfos.add(new CollectedRuleInfo(rule_info, eval.value(EvalMetric.CompressionRatio)));
-            rule.extractPositiveEntailments(positiveEntailments);
+            synchronized (collectedRuleInfos) {
+                collectedRuleInfos.add(new CollectedRuleInfo(rule_info, eval.value(EvalMetric.CompressionRatio)));
+            }
+            try {
+                synchronized (positiveEntailments) {
+                    rule.extractPositiveEntailments(positiveEntailments);
+                }
+            } catch (KbException e) {
+                System.err.println("Error occurs during extracting positive entailments");
+                e.printStackTrace();
+            }
         }
     }
 
@@ -401,10 +436,10 @@ public class Hinter {
      * Example: datasets/ UMLS template.hint
      */
     public static void main(String[] args) throws FileNotFoundException, ExperimentException {
-        if (3 != args.length) {
-            System.out.println("Usage: <Path to the KB> <KB name> <Path to the hint file>");
+        if (4 != args.length) {
+            System.out.println("Usage: <Path to the KB> <KB name> <Path to the hint file> <threads>");
         }
-        Hinter hinter = new Hinter(args[0], args[1], args[2]);
+        Hinter hinter = new Hinter(args[0], args[1], args[2], Integer.parseInt(args[3]));
         hinter.run();
     }
 }

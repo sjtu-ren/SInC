@@ -7,14 +7,13 @@ import sinc2.kb.KbException;
 import sinc2.kb.KbRelation;
 import sinc2.kb.NumeratedKb;
 import sinc2.rule.Fingerprint;
+import sinc2.rule.Rule;
 import sinc2.util.MultiSet;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
- * A sub-class of "CachedRule" that can explicitly extract entailments to other data structures.
+ * A subclass of "CachedRule" that can explicitly extract entailments to other data structures.
  *
  * @since 2.0
  */
@@ -50,5 +49,20 @@ public class EntailmentExtractiveRule extends CachedRule {
         for (CacheEntry entry: posCache) {
             relation.addRecords(entry.entry.get(0).complSet);
         }
+    }
+
+    /**
+     * Override the original version to thread safe.
+     */
+    @Override
+    protected void add2TabuSet() {
+        final MultiSet<Integer> functor_mset = new MultiSet<>();
+        for (int pred_idx = Rule.FIRST_BODY_PRED_IDX; pred_idx < structure.size(); pred_idx++) {
+            functor_mset.add(structure.get(pred_idx).functor);
+        }
+        final Set<Fingerprint> tabu_set = category2TabuSetMap.computeIfAbsent(
+                functor_mset, k -> Collections.synchronizedSet(new HashSet<>())
+        );
+        tabu_set.add(fingerprint);
     }
 }

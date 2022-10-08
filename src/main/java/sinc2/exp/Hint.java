@@ -74,7 +74,9 @@ public class Hint {
                         /* Complete a mutual set of functors */
                         functor_set.add(functor_2_int_map.get(builder.toString()));
                         builder = null;
-                        restrictions.add(ArrayOperation.toArray(functor_set));
+                        if (2 <= functor_set.size()) {  // Ignore the set with only one item
+                            restrictions.add(ArrayOperation.toArray(functor_set));
+                        }
                         functor_set.clear();
                         break;
                     case ',':
