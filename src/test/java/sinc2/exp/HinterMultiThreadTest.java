@@ -20,7 +20,7 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class HinterTest {
+class HinterMultiThreadTest {
 
     static final String MEM_DIR = "/dev/shm/";
 
@@ -87,7 +87,7 @@ class HinterTest {
         hint_writer.close();
 
         /* Run hinter */
-        Hinter hinter = new Hinter(MEM_DIR, KB_NAME, hint_file.getAbsolutePath());
+        HinterMultiThread hinter = new HinterMultiThread(MEM_DIR, KB_NAME, hint_file.getAbsolutePath(), 1);
         hinter.run();
 
         /* Check result */
@@ -97,7 +97,8 @@ class HinterTest {
         expected_rules.add(parseBareRule("parent(X,Y):-father(X,Y)", kb.getNumerationMap(), cache, tabu));
         expected_rules.add(parseBareRule("parent(X,Y):-mother(X,Y)", kb.getNumerationMap(), cache, tabu));
         expected_rules.add(parseBareRule("family(X,Y,Z):-father(X,Z),mother(Y,Z)", kb.getNumerationMap(), cache, tabu));
-        File rules_file = Hinter.getRulesFilePath(hint_file.getAbsolutePath(), KB_NAME).toFile();
+        File rules_file = HinterMultiThread.getRulesFilePath(hint_file.getAbsolutePath(), KB_NAME).toFile();
+        File log_file = HinterMultiThread.getLogFilePath(hint_file.getAbsolutePath(), KB_NAME).toFile();
         BufferedReader reader = new BufferedReader(new FileReader(rules_file));
         String line = reader.readLine();    // read the title line
         Set<Rule> actual_rules = new HashSet<>();
@@ -108,10 +109,11 @@ class HinterTest {
 
         /* Remove test files */
         deleteDir(Paths.get(MEM_DIR, KB_NAME).toFile());
-        hint_file.delete();
-        rules_file.delete();
+        assertTrue(hint_file.delete());
+        assertTrue(rules_file.delete());
+        assertTrue(log_file.delete());
     }
-
+    
     @Test
     void testRun2() throws KbException, IOException, ExperimentException, RuleParseException {
         /* Hints:
@@ -245,7 +247,7 @@ class HinterTest {
         hint_writer.close();
 
         /* Run hinter */
-        Hinter hinter = new Hinter(MEM_DIR, KB_NAME, hint_file.getAbsolutePath());
+        HinterMultiThread hinter = new HinterMultiThread(MEM_DIR, KB_NAME, hint_file.getAbsolutePath(), 1);
         hinter.run();
 
         /* Check result */
@@ -277,7 +279,8 @@ class HinterTest {
         expected_rules.add(parseBareRule("grandmother(X,Y):-mother(X,Z),mother(Z,Y)", kb.getNumerationMap(), cache, tabu));
         expected_rules.add(parseBareRule("grandmother(X,Y):-mother(X,Z),parent(Z,Y)", kb.getNumerationMap(), cache, tabu));
         expected_rules.add(parseBareRule("grandchild(X,Y):-child(X,Z),child(Z,Y)", kb.getNumerationMap(), cache, tabu));
-        File rules_file = Hinter.getRulesFilePath(hint_file.getAbsolutePath(), KB_NAME).toFile();
+        File rules_file = HinterMultiThread.getRulesFilePath(hint_file.getAbsolutePath(), KB_NAME).toFile();
+        File log_file = HinterMultiThread.getLogFilePath(hint_file.getAbsolutePath(), KB_NAME).toFile();
         BufferedReader reader = new BufferedReader(new FileReader(rules_file));
         String line = reader.readLine();    // read the title line
         Set<Rule> actual_rules = new HashSet<>();
@@ -288,8 +291,9 @@ class HinterTest {
 
         /* Remove test files */
         deleteDir(Paths.get(MEM_DIR, KB_NAME).toFile());
-        hint_file.delete();
-        rules_file.delete();
+        assertTrue(hint_file.delete());
+        assertTrue(rules_file.delete());
+        assertTrue(log_file.delete());
     }
 
     @Test
@@ -369,7 +373,7 @@ class HinterTest {
         hint_writer.close();
 
         /* Run hinter */
-        Hinter hinter = new Hinter(MEM_DIR, KB_NAME, hint_file.getAbsolutePath());
+        HinterMultiThread hinter = new HinterMultiThread(MEM_DIR, KB_NAME, hint_file.getAbsolutePath(), 1);
         hinter.run();
 
         /* Check result */
@@ -385,7 +389,8 @@ class HinterTest {
 //        expected_rules.add(parseBareRule("couple(X,Y):-child(Z,X),child(Z,Y)", kb.getNumerationMap(), cache, tabu));
         //expected_rules.add(parseBareRule("child(X,Y):-mother(Z,X),couple(Y,Z)", kb.getNumerationMap(), cache, tabu));
         //expected_rules.add(parseBareRule("father(X,Y):-couple(X,Z),mother(Z,Y)", kb.getNumerationMap(), cache, tabu));
-        File rules_file = Hinter.getRulesFilePath(hint_file.getAbsolutePath(), KB_NAME).toFile();
+        File rules_file = HinterMultiThread.getRulesFilePath(hint_file.getAbsolutePath(), KB_NAME).toFile();
+        File log_file = HinterMultiThread.getLogFilePath(hint_file.getAbsolutePath(), KB_NAME).toFile();
         BufferedReader reader = new BufferedReader(new FileReader(rules_file));
         String line = reader.readLine();    // read the title line
         Set<Rule> actual_rules = new HashSet<>();
@@ -396,10 +401,11 @@ class HinterTest {
 
         /* Remove test files */
         deleteDir(Paths.get(MEM_DIR, KB_NAME).toFile());
-        hint_file.delete();
-        rules_file.delete();
+        assertTrue(hint_file.delete());
+        assertTrue(rules_file.delete());
+        assertTrue(log_file.delete());
     }
-
+    
     BareRule parseBareRule(String str, NumerationMap numMap, Set<Fingerprint> cache, Map<MultiSet<Integer>, Set<Fingerprint>> tabu) throws RuleParseException {
         List<ParsedPred> parsed_structure = Rule.parseStructure(str);
         List<Predicate> structure = new ArrayList<>();
