@@ -70,6 +70,7 @@ public class NumeratedKb {
         String kb_dir_path = kb_dir.getAbsolutePath();
         this.numMap = new NumerationMap(kb_dir_path);
         loadAllRelationsHandler(kb_dir, false);
+        updatePromisingConstants();
     }
 
     /**
@@ -88,6 +89,7 @@ public class NumeratedKb {
         String kb_dir_path = kb_dir.getAbsolutePath();
         this.numMap = new NumerationMap(kb_dir_path);
         loadAllRelationsHandler(kb_dir, check);
+        updatePromisingConstants();
     }
 
     /**

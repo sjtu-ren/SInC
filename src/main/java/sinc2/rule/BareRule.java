@@ -55,7 +55,9 @@ public class BareRule extends Rule {
 
     @Override
     public BareRule clone() {
-        return new BareRule(this);
+        BareRule rule = new BareRule(this);
+        rule.returningEvidence = this.returningEvidence;
+        return rule;
     }
 
     @Override

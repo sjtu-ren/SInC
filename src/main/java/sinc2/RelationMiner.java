@@ -161,6 +161,85 @@ public abstract class RelationMiner {
         }
     }
 
+    /* added */
+    protected Rule findRule(Rule rule) {
+        /* Create the beams */
+        Rule[] beams = new Rule[beamwidth];
+        beams[0] = rule;
+        Rule best_local_optimum = null;
+
+        /* Find a local optimum (there is certainly a local optimum in the search routine) */
+        while (true) {
+            /* Find the candidates in the next round according to current beams */
+            Rule[] best_candidates = new Rule[beamwidth];
+            try {
+                for (int i = 0; i < beamwidth && null != beams[i]; i++) {
+                    Rule r = beams[i];
+                    selectAsBeam(r);
+                    logger.printf("Extend: %s\n", r);
+                    logger.flush();
+
+                    /* Find the specializations and generalizations of rule 'r' */
+                    int specializations_cnt = findSpecializations(r, best_candidates);
+                    int generalizations_cnt = findGeneralizations(r, best_candidates);
+                    if (0 == specializations_cnt && 0 == generalizations_cnt) {
+                        /* If no better specialized and generalized rules, 'r' is a local optimum */
+                        /* Keep track of only the best local optimum */
+                        if (null == best_local_optimum ||
+                                best_local_optimum.getEval().value(evalMetric) < r.getEval().value(evalMetric)) {
+                            best_local_optimum = r;
+                        }
+                    }
+                }
+            } catch (InterruptedSignal e) {
+                /* Stop the finding procedure at the current stage and return the best rule */
+                Rule best_rule = beams[0];
+                for (int i = 1; i < beamwidth && null != beams[i]; i++) {
+                    if (best_rule.getEval().value(evalMetric) < beams[i].getEval().value(evalMetric)) {
+                        best_rule = beams[i];
+                    }
+                }
+                for (int i = 0; i < beamwidth && null != best_candidates[i]; i++) {
+                    if (best_rule.getEval().value(evalMetric) < best_candidates[i].getEval().value(evalMetric)) {
+                        best_rule = best_candidates[i];
+                    }
+                }
+                return (null != best_rule) ? (best_rule.getEval().useful() ? best_rule : null) : null;
+            }
+
+            /* Find the best candidate */
+            Rule best_candidate = null;
+            if (null != best_candidates[0]) {
+                best_candidate = best_candidates[0];
+                for (int i = 1; i < beamwidth && null != best_candidates[i]; i++) {
+                    if (best_candidate.getEval().value(evalMetric) < best_candidates[i].getEval().value(evalMetric)) {
+                        best_candidate = best_candidates[i];
+                    }
+                }
+            }
+
+            /* If there is a local optimum and it is the best among all, return the rule */
+            if (null != best_local_optimum &&
+                    (null == best_candidate ||
+                            best_local_optimum.getEval().value(evalMetric) > best_candidate.getEval().value(evalMetric))
+            ) {
+                /* If the best is not useful, return NULL */
+                return best_local_optimum.getEval().useful() ? best_local_optimum : null;
+            }
+
+            /* If the best rule reaches the stopping threshold, return the rule */
+            /* The "best_candidate" is certainly not NULL if the workflow goes here */
+            /* Assumption: the stopping threshold is no less than the threshold of usefulness */
+            Eval best_eval = best_candidate.getEval();
+            if (stopCompressionRatio <= best_eval.value(EvalMetric.CompressionRatio) || 0 == best_eval.getNegEtls()) {
+                return best_candidate;
+            }
+
+            /* Update the beams */
+            beams = best_candidates;
+        }
+    }
+
     /**
      * Find the specializations of a base rule. Only the specializations that have a better quality score is added to the
      * candidate list. The candidate list always keeps the best rules.
@@ -378,7 +457,13 @@ public abstract class RelationMiner {
      */
     public void run() throws KbException {
         Rule rule;
-        while (!SInC.interrupted && (null != (rule = findRule()))) {
+        rule = findRule();
+        if(rule == null){
+            logger.printf("No useful extension\n");
+            logger.flush();
+            return;
+        }
+        while (!SInC.interrupted && (null != (rule = findRule(rule)))) {
             logger.printf("Found: %s\n", rule);
             hypothesis.add(rule);
             updateKbAndDependencyGraph(rule);

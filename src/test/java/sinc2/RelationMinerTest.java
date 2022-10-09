@@ -65,7 +65,7 @@ class RelationMinerTest {
     }
 
     @Test
-    void testFindSpecializations1() throws InterruptedSignal {
+    void testFindSpecializations1() throws InterruptedSignal, KbException {
         Rule base_rule = new BareRule(kb.name2Num("family"), 3, new HashSet<>(), new HashMap<>());
         assertEquals("family(?,?,?):-", base_rule.toDumpString(kb.getNumerationMap()));
 
@@ -107,6 +107,11 @@ class RelationMinerTest {
         );
         Rule[] spec_rules = new Rule[expected_specs.size() * 2];
         assertEquals(expected_specs.size(), miner.findSpecializations(base_rule, spec_rules));
+        try {
+            miner.run();
+        } catch (KbException e) {
+            e.printStackTrace(System.out);
+        }
         Set<String> actual_specs =new HashSet<>();
         for (Rule rule: spec_rules) {
             if (null == rule) {

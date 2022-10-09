@@ -22,7 +22,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>sinc2.Main</mainClass>
+                            <mainClass>sinc.Main</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -72,6 +72,12 @@
             <artifactId>junit-jupiter-engine</artifactId>
             <version>5.7.0</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <version>RELEASE</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 </project>

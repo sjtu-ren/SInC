@@ -3,15 +3,19 @@ package sinc2;
 import org.apache.commons.cli.Options;
 import sinc2.common.InterruptedSignal;
 import sinc2.common.Predicate;
+import sinc2.impl.base.CachedRule;
+import sinc2.impl.base.SincWithTabu;
 import sinc2.kb.*;
 import sinc2.rule.*;
 import sinc2.util.graph.FeedbackVertexSetSolver;
 import sinc2.util.graph.GraphNode;
 import sinc2.util.graph.Tarjan;
 
+import java.awt.*;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.*;
+import java.util.List;
 
 public class Main {
     protected static NumeratedKb kb;
@@ -42,8 +46,7 @@ public class Main {
 
         @Override
         protected Rule getStartRule() {
-            Rule rule =  new BareRule(kb.name2Num("diedIn"), kb.getRelationArity(kb.name2Num("diedIn")), new HashSet<>(), new HashMap<>());
-            rule.cvt2Uvs2NewLv(kb.name2Num("diedOnDate"), 2, 0, 0, 0);
+            Rule rule =  new CachedRule(targetRelation, kb.getRelationArity(targetRelation), new HashSet<>(), new HashMap<>(), kb);
             return rule;
         }
 
@@ -58,25 +61,28 @@ public class Main {
 
     public static void main(String[] args) throws Exception{
         PrintWriter logger = new PrintWriter(System.out);
+//        SincConfig sincConfig = new SincConfig("", "wordnet", "", "newwordnet", 1, false,
+//                3, EvalMetric.CompressionCapacity, 0.05, 0.25, 0.5);
+//        SInC sinc = new SInc(sincConfig);
+        SInC.interrupted = false;
         /* load kb */
         try {
-            kb = new NumeratedKb("yago1", "../KBRedundancies/2-Open-domainExtraction/data/yago1");
+            kb = new NumeratedKb("wordnet", "");
         } catch (KbException | IOException e) {
             e.printStackTrace(logger);
             logger.println("[ERROR] KB Load failed, abort.");
             return;
         }
-        compressedKb = new CompressedKb("newYago1", kb);
-        // get target relations
+        compressedKb = new CompressedKb("newwn", kb);
+        // get target relations（封装起来更好）
         List<Integer> relations = new ArrayList<>();
         for (KbRelation relation: kb.getRelations()) {
-            if(Objects.equals(relation.getName(), "diedIn") || Objects.equals(relation.getName(), "diedOnDate"))
+//            if(Objects.equals(relation.getName(), "diedIn") || Objects.equals(relation.getName(), "diedOnDate"))
                 relations.add(relation.getNumeration());
         }
         // compress target relation
-        try{
-            for (Integer relation_num: relations) {
-                RelationMiner relation_miner = new RealMiner(kb, relation_num, EvalMetric.CompressionCapacity, 1,
+        for (Integer relation_num: relations) {
+                RealMiner relation_miner = new RealMiner(kb, relation_num, EvalMetric.CompressionCapacity, 1,
                         0.5, new HashMap<>(), new HashMap<>(), new PrintWriter(System.out));
                 relation_miner.run();
                 KbRelation ce_relation = compressedKb.getCounterexampleRelation(relation_num);
@@ -85,11 +91,10 @@ public class Main {
                     compressedKb.addHypothesisRule(r);
                 }
             }
-        } catch (KbException e) {
-            e.printStackTrace(logger);
-            logger.println("[ERROR] Relation Miner failed. Interrupt");
-            interrupted = true;
-        }
+        RealMiner relation_miner = new RealMiner(kb, relations.get(0) , EvalMetric.CompressionCapacity, 1,
+                    0.5, new HashMap<>(), new HashMap<>(), new PrintWriter(System.out));
+        Rule rule = relation_miner.getStartRule();
+        compressedKb.addHypothesisRule(rule);
 
         /* Dependency analysis */
         try {
@@ -121,26 +126,28 @@ public class Main {
 
             /* Log the hypothesis */
             logger.println("\n### Hypothesis Found ###");
-            for (Rule rule : compressedKb.getHypothesis()) {
-                logger.println(rule);
-            }
+//            for (Rule rule : compressedKb.getHypothesis()) {
+//                logger.println(rule);
+//            }
             logger.println();
             return;
         }
 
         /* Log the hypothesis */
         logger.println("\n### Hypothesis Found ###");
-        for (Rule rule : compressedKb.getHypothesis()) {
-            logger.println(rule);
-        }
+        System.out.println("\n### Hypothesis Found ###");
+
+//        for (Rule rule : compressedKb.getHypothesis()) {
+//            logger.println(rule);
+//        }
         logger.println();
 
         /* Dump the compressed KB */
         try {
-            compressedKb.dump("../compressedYago1");
+            compressedKb.dump("");
         } catch (IOException e) {
-            e.printStackTrace(logger);
-            logger.println("[ERROR] Compressed KB dump failed. Abort.");
+            e.printStackTrace(System.out);
+            System.out.println("[ERROR] Compressed KB dump failed. Abort.");
         }
     }
 }

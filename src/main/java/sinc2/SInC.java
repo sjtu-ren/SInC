@@ -1,5 +1,7 @@
 package sinc2;
 
+import org.jetbrains.annotations.NotNull;
+import org.neo4j.driver.internal.shaded.reactor.util.annotation.NonNull;
 import sinc2.common.Predicate;
 import sinc2.kb.*;
 import sinc2.rule.Rule;
@@ -59,7 +61,7 @@ public abstract class SInC {
      *
      * @param config The configurations
      */
-    public SInC(SincConfig config) {
+    public SInC(@NotNull SincConfig config) {
         this.config = config;
 
         /* Create writer objects to log and std output files */
