@@ -1,4 +1,4 @@
-package sinc2.exp;
+package sinc2.exp.hint;
 
 import sinc2.common.SincException;
 

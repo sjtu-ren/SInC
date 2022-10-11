@@ -3,6 +3,7 @@ package sinc2.exp;
 import org.junit.jupiter.api.Test;
 import sinc2.common.Argument;
 import sinc2.common.Predicate;
+import sinc2.exp.hint.Hint;
 import sinc2.kb.NumerationMap;
 import sinc2.rule.RuleParseException;
 import sinc2.rule.SpecOprCase2;
@@ -10,7 +11,6 @@ import sinc2.rule.SpecOprCase3;
 import sinc2.rule.SpecOprCase4;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 

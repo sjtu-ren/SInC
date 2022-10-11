@@ -1,9 +1,9 @@
-package sinc2.exp;
+package sinc2.exp.hint;
 
 import sinc2.common.Predicate;
 import sinc2.kb.KbException;
 import sinc2.kb.KbRelation;
-import sinc2.kb.NumeratedKb;
+import sinc2.kb.StaticKb;
 import sinc2.rule.*;
 import sinc2.util.ArrayOperation;
 import sinc2.util.MultiSet;
@@ -46,7 +46,8 @@ import java.util.*;
  *       instead: [(p, q), (p, r), (q, r)].
  *
  * The output is a "rules_<KB>.tsv" file containing n+1 rows and 7 columns:
- *   - The first is the title row. Other rows are in the descent order of τ(r)
+ *   - The first is the title row. Other rows are in the descent order of τ(r). Rules are sorted in descent order of
+ *     compression ratio.
  *   - The columns are:
  *     1. Rule: An instance of the template, written as r.
  *     2. |r|
@@ -94,7 +95,7 @@ public class Hinter {
     protected final Path outputFilePath;
 
     /** The target KB */
-    protected NumeratedKb kb;
+    protected StaticKb kb;
     /** The numerations of the relations in the KB */
     protected int[] kbRelationNums;
     /** The arities of the relations in the KB (correspond to the relation numeration) */
@@ -130,7 +131,6 @@ public class Hinter {
         this.kbName = kbName;
         this.hintFilePath = hintFilePath;
         this.outputFilePath = getRulesFilePath(hintFilePath, kbName);
-        System.setOut(new PrintStream(getLogFilePath(hintFilePath, kbName).toFile()));
     }
 
     /**
@@ -141,7 +141,7 @@ public class Hinter {
         try {
             /* Load KB */
             long time_start = System.currentTimeMillis();
-            kb = new NumeratedKb(kbName, kbPath);
+            kb = new StaticKb(kbName, kbPath);
             kbRelationNums = new int[kb.totalRelations()];
             kbRelationArities = new int[kb.totalRelations()];
             int idx = 0;
@@ -150,6 +150,8 @@ public class Hinter {
                 kbRelationArities[idx] = relation.getArity();
                 idx++;
             }
+            System.out.println("KB Loaded");
+            System.out.flush();
 
             /* Load hint file */
             /* Read "Fact Coverage" and "τ" */
@@ -172,6 +174,8 @@ public class Hinter {
             while (null != (line = reader.readLine())) {
                 hints.add(new Hint(line, kb.getNumerationMap()));
             }
+            System.out.println("Templates Loaded");
+            System.out.flush();
 
             /* Instantiate templates */
             int total_covered_records = 0;
@@ -214,6 +218,7 @@ public class Hinter {
                         System.out.println(collectedRuleInfos.get(k).rule);
                     }
                     rules_idx = collectedRuleInfos.size();
+                    System.out.flush();
                 }
 
                 System.out.printf("Relation Done (%d/%d): %s\n", i+1, kbRelationNums.length, kb.num2Name(head_functor));
@@ -419,7 +424,14 @@ public class Hinter {
         if (3 != args.length) {
             System.out.println("Usage: <Path to the KB> <KB name> <Path to the hint file>");
         }
-        Hinter hinter = new Hinter(args[0], args[1], args[2]);
+        String kb_path = args[0];
+        String kb_name = args[1];
+        String hint_file_path = args[2];
+        PrintStream log_stream = new PrintStream(getLogFilePath(hint_file_path, kb_name).toFile());
+        System.setOut(log_stream);
+        System.setErr(log_stream);
+
+        Hinter hinter = new Hinter(kb_path, kb_name, hint_file_path);
         hinter.run();
     }
 }

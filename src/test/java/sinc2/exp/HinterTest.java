@@ -1,6 +1,8 @@
 package sinc2.exp;
 
 import org.junit.jupiter.api.Test;
+import sinc2.exp.hint.ExperimentException;
+import sinc2.exp.hint.Hinter;
 import sinc2.util.MultiSet;
 import sinc2.common.Argument;
 import sinc2.common.ParsedArg;

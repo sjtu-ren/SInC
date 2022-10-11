@@ -119,6 +119,10 @@ public class Eval {
         return negEtls;
     }
 
+    public int getRuleLength() {
+        return ruleLength;
+    }
+
     @Override
     public String toString() {
         return String.format(

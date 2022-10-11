@@ -67,7 +67,7 @@ public class KbRelation implements Iterable<Record> {
     /**
      * The class for the parsed information of a relation file name
      */
-    static class RelationInfo {
+    public static class RelationInfo {
         public final String name;
         public final int arity;
         public final int totalRecords;
