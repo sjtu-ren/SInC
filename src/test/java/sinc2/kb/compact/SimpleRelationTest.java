@@ -32,7 +32,7 @@ class SimpleRelationTest {
         fos.write(LittleEndianIntIO.leInt2ByteArray(0xf));
         fos.close();
 
-        SimpleRelation relation = new SimpleRelation("family", 3, 4, TEST_DIR);
+        SimpleRelation relation = new SimpleRelation("family", 0, 3, 4, TEST_DIR);
         assertEquals(4, relation.totalRows());
         assertEquals(3, relation.totalCols());
         assertTrue(relation.hasRow(new int[]{4, 5, 6}));
@@ -47,13 +47,13 @@ class SimpleRelationTest {
         for (int i = 0; i < 55; i++) {
             records[i] = new int[]{i, i, i};
         }
-        SimpleRelation relation = new SimpleRelation(records);
+        SimpleRelation relation = new SimpleRelation("test", 0, records);
 
-        relation.setEntailed(new int[]{0, 0, 0});
-        relation.setEntailed(new int[]{1, 1, 1});
-        relation.setEntailed(new int[]{31, 31, 31});
-        relation.setEntailed(new int[]{47, 47, 47});
-        relation.setEntailed(new int[]{1, 2, 3});
+        relation.setAsEntailed(new int[]{0, 0, 0});
+        relation.setAsEntailed(new int[]{1, 1, 1});
+        relation.setAsEntailed(new int[]{31, 31, 31});
+        relation.setAsEntailed(new int[]{47, 47, 47});
+        relation.setAsEntailed(new int[]{1, 2, 3});
         assertTrue(relation.isEntailed(new int[]{0, 0, 0}));
         assertTrue(relation.isEntailed(new int[]{1, 1, 1}));
         assertTrue(relation.isEntailed(new int[]{31, 31, 31}));
@@ -61,9 +61,9 @@ class SimpleRelationTest {
         assertFalse(relation.isEntailed(new int[]{1, 2, 3}));
         assertFalse(relation.isEntailed(new int[]{3, 3, 3}));
 
-        relation.setNotEntailed(new int[]{31, 31, 31});
-        relation.setNotEntailed(new int[]{47, 47, 47});
-        relation.setNotEntailed(new int[]{4, 5, 6});
+        relation.setAsNotEntailed(new int[]{31, 31, 31});
+        relation.setAsNotEntailed(new int[]{47, 47, 47});
+        relation.setAsNotEntailed(new int[]{4, 5, 6});
         assertTrue(relation.isEntailed(new int[]{0, 0, 0}));
         assertTrue(relation.isEntailed(new int[]{1, 1, 1}));
         assertFalse(relation.isEntailed(new int[]{31, 31, 31}));
